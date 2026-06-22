@@ -27,57 +27,57 @@ const FPS = args.fps || 60;
 const BITRATE = args.bitrate || 6000000;
 
 const PORT = 8080;
-const PROJECTS_BASE_DIR = path.resolve(__dirname, '../../../'); // Pasta raiz contendo Engine-Headless-Recorder e nexus_media
+const PROJECTS_BASE_DIR = path.resolve(__dirname, '../../../../'); // /app
 const OUTPUT_FILE_PATH = args.output 
   ? path.resolve(args.output) 
-  : path.resolve(__dirname, `../../../nexus_media/video/${PROJECT_NAME}/genesis_final_SOTA.mp4`);
+  : path.resolve(__dirname, `../../../../nexus_media/video/${PROJECT_NAME}/genesis_final_SOTA.mp4`);
 
 // 1. Iniciar servidor HTTP estático local para evitar restrições CORS com o OPFS e Web Workers
 function startLocalServer() {
-  const server = http.createServer((req, res) => {
-    // Decodificar URL e remover parâmetros de consulta
-    const urlPath = decodeURIComponent(req.url.split('?')[0]);
-    const filePath = path.join(PROJECTS_BASE_DIR, urlPath);
+  return new Promise((resolve) => {
+    const server = http.createServer((req, res) => {
+      // Decodificar URL e remover parâmetros de consulta
+      const urlPath = decodeURIComponent(req.url.split('?')[0]);
+      const filePath = path.join(PROJECTS_BASE_DIR, urlPath.replace(/^\//, ''));
 
-    // Garantir proteção contra Path Traversal
-    if (!filePath.startsWith(PROJECTS_BASE_DIR)) {
-      res.statusCode = 403;
-      res.end('Forbidden');
-      return;
-    }
-
-    fs.stat(filePath, (err, stats) => {
-      if (err || !stats.isFile()) {
-        res.statusCode = 404;
-        res.end('Not Found');
+      // Garantir proteção contra Path Traversal
+      if (!filePath.startsWith(PROJECTS_BASE_DIR)) {
+        res.statusCode = 403;
+        res.end('Forbidden');
         return;
       }
 
-      // Tipos MIME necessários para a pipeline
-      const ext = path.extname(filePath).toLowerCase();
-      const mimeTypes = {
-        '.html': 'text/html',
-        '.css': 'text/css',
-        '.js': 'application/javascript',
-        '.wasm': 'application/wasm',
-        '.json': 'application/json',
-        '.mp4': 'video/mp4',
-      };
-      const contentType = mimeTypes[ext] || 'application/octet-stream';
+      fs.stat(filePath, (err, stats) => {
+        if (err || !stats.isFile()) {
+          res.statusCode = 404;
+          res.end('Not Found');
+          return;
+        }
 
-      res.writeHead(200, {
-        'Content-Type': contentType,
-        // Cabeçalhos de segurança CORS exigidos para WebCodecs e isolamento de Workers/SharedBuffers
-        'Cross-Origin-Opener-Policy': 'same-origin',
-        'Cross-Origin-Embedder-Policy': 'require-corp',
+        // Tipos MIME necessários para a pipeline
+        const ext = path.extname(filePath).toLowerCase();
+        const mimeTypes = {
+          '.html': 'text/html',
+          '.css': 'text/css',
+          '.js': 'application/javascript',
+          '.wasm': 'application/wasm',
+          '.json': 'application/json',
+          '.mp4': 'video/mp4',
+        };
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          // Cabeçalhos de segurança CORS exigidos para WebCodecs e isolamento de Workers/SharedBuffers
+          'Cross-Origin-Opener-Policy': 'same-origin',
+          'Cross-Origin-Embedder-Policy': 'require-corp',
+        });
+
+        const stream = fs.createReadStream(filePath);
+        stream.pipe(res);
       });
-
-      const stream = fs.createReadStream(filePath);
-      stream.pipe(res);
     });
-  });
 
-  return new Promise((resolve) => {
     server.listen(PORT, '127.0.0.1', () => {
       console.log(`[SERVER] Servidor de desenvolvimento ativo em http://127.0.0.1:${PORT}`);
       resolve(server);
@@ -117,7 +117,7 @@ async function record() {
     page.on('pageerror', err => console.error(`[BROWSER ERROR] ${err.toString()}`));
 
     // Abrir a fábrica web correspondente usando o servidor local
-    const projectUrl = `http://127.0.0.1:${PORT}/nexus_media/video/${PROJECT_NAME}/index.html?headless=true`;
+    const projectUrl = `http://127.0.0.1:${PORT}/${PROJECT_NAME}/index.html?headless=true`;
     console.log(`[RECORDER] Navegando para ${projectUrl}`);
     await page.goto(projectUrl, { waitUntil: 'networkidle0' });
 
@@ -127,7 +127,7 @@ async function record() {
 
     // 1. Injetar o CoreRecorder dinamicamente na página
     console.log(`[RECORDER] Injetando gravador na página...`);
-    await page.addScriptTag({ url: `http://127.0.0.1:${PORT}/Engine-Headless-Recorder/src/browser/recorder-core.js` });
+    await page.addScriptTag({ url: `http://127.0.0.1:${PORT}/tools/Engine-Headless-Recorder/src/browser/recorder-core.js` });
 
     // 2. Inicializar o gravador no contexto do browser
     console.log(`[RECORDER] Inicializando o CoreRecorder e abrindo fluxo fMP4 no OPFS...`);
