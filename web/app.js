@@ -5,7 +5,8 @@
 const numParticles = 2000;
 const targetFps = 30;
 const canvas = document.getElementById("video-canvas");
-const ctx = canvas.getContext("2d");
+// preserveDrawingBuffer if webgl, but for 2d we use willReadFrequently if needed or just getContext
+const ctx = canvas.getContext("2d", { willReadFrequently: true });
 const hudTime = document.getElementById("hud-time");
 const hudTarget = document.getElementById("hud-target");
 
@@ -362,6 +363,8 @@ window.renderFrame = async (tMs) => {
 window.onload = async () => {
     await loadResources();
     initialized = true;
+
+    window.__appReady = true;
 
     const isHeadless = new URLSearchParams(window.location.search).get("headless") === "true";
     if (!isHeadless) {

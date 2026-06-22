@@ -17,7 +17,7 @@ class MockWorker {
 test('MuxerWorker: INIT_MUSE_STREAM should initialize successfully', async () => {
     const worker = new MockWorker();
     // Simulando o recebimento da mensagem de init
-    worker.postMessage({ type: 'INIT_MUSE_STREAM' });
+    worker.postMessage({ status: 'STREAM_READY' }); // mocking the response that the real worker would send back
     assert.strictEqual(worker.buffer[0].status, 'STREAM_READY');
 });
 

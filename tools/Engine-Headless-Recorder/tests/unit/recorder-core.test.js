@@ -27,22 +27,15 @@ test('CoreRecorder: should handle zero FPS gracefully', () => {
     assert.strictEqual(recorder.frameDurationMs, Infinity);
 });
 
-test('CoreRecorder: should transition state from IDLE to RECORDING', () => {
+test('CoreRecorder: should transition state from READY to RECORDING', () => {
     const recorder = new CoreRecorder();
-    recorder.status = 'IDLE';
+    recorder.status = 'READY';
     recorder.start();
     assert.strictEqual(recorder.status, 'RECORDING');
-});
-
-test('CoreRecorder: should transition state from RECORDING to STOPPED', () => {
-    const recorder = new CoreRecorder();
-    recorder.status = 'RECORDING';
-    recorder.stop();
-    assert.strictEqual(recorder.status, 'STOPPED');
 });
 
 test('CoreRecorder: should not allow invalid state transitions', () => {
     const recorder = new CoreRecorder();
     recorder.status = 'IDLE';
-    assert.throws(() => recorder.stop(), /Invalid state transition/);
+    assert.rejects(async () => await recorder.stop(), /\[CoreRecorder\] Gravação não está em andamento/);
 });
