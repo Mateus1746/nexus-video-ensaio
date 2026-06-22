@@ -1,0 +1,32 @@
+version: '3'
+
+tasks:
+  sync-up:
+    desc: Envia roteiros para o Google Drive
+    cmds:
+      - ./pipeline/sync.sh up
+
+  sync-down:
+    desc: Baixa áudios e timestamps processados
+    cmds:
+      - ./pipeline/sync.sh down
+
+  orchestrate:
+    desc: Gera o narrative.json sincronizado
+    cmds:
+      - python3 pipeline/director.py
+
+  render-preview:
+    desc: Renderiza os primeiros 30 segundos do vídeo
+    cmds:
+      - cd ../../../nexus_renderizador && cargo run --release --bin render_native -- --narrative pipeline/narrative.json --output exports/preview_modular.mp4 --duration 30.0 --audio ../nexus_media/video/ensaio/pipeline/sync_drive/audio_ready/script_cold_war.wav --project-root .
+
+  render-full:
+    desc: Renderiza o documentário completo
+    cmds:
+      - cd ../../../nexus_renderizador && cargo run --release --bin render_native -- --narrative pipeline/narrative.json --output exports/final_documentary.mp4 --audio ../nexus_media/video/ensaio/pipeline/sync_drive/audio_ready/script_cold_war.wav --project-root .
+
+  clean:
+    desc: Limpa arquivos temporários de renderização
+    cmds:
+      - rm -rf exports/tests/*

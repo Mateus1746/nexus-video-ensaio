@@ -1,0 +1,19 @@
+[project]
+name = "nexus-factory-ensaio"
+version = "0.1.0"
+description = "Unidade de produção de documentários baseados em partículas"
+readme = "GEMINI.md"
+requires-python = ">=3.12"
+dependencies = [
+    "requests>=2.32.0",
+    "watchdog>=4.0.0",
+    "pillow>=10.3.0",
+    "geojson>=3.1.0",
+
+    "kokoro",
+    "soundfile",
+    "torch",
+    "numpy",]
+
+[tool.uv]
+managed = true

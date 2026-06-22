@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemma 4 - Fluxo Orgânico</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000105; }
+        canvas { display: block; touch-action: none; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        
+        const sprites = [];
+        const colors = [
+            { light: '#ffffff', core: '#4fc3f7', glow: 'rgba(79, 195, 247, 0)' },
+            { light: '#e1f5fe', core: '#0288d1', glow: 'rgba(2, 136, 209, 0)' },
+            { light: '#ffffff', core: '#ffffff', glow: 'rgba(255, 255, 255, 0)' }
+        ];
+        
+        let width, height, halfW, halfH;
+        let particles = [];
+        const particleCount = 1600;
+        let time = 0;
+
+        function createSprites() {
+            const size = 16;
+            colors.forEach(col => {
+                const sCanvas = document.createElement('canvas');
+                sCanvas.width = size;
+                sCanvas.height = size;
+                const sCtx = sCanvas.getContext('2d');
+                const grad = sCtx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+                grad.addColorStop(0, col.light);
+                grad.addColorStop(0.3, col.core);
+                grad.addColorStop(1, col.glow);
+                sCtx.fillStyle = grad;
+                sCtx.fillRect(0, 0, size, size);
+                sprites.push(sCanvas);
+            });
+        }
+
+        class Particle {
+            constructor() {
+                this.init(true);
+            }
+
+            init(isFirstLoad = false) {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.life = isFirstLoad ? Math.random() : 0;
+                this.maxLife = 0.5 + Math.random() * 0.5;
+                this.speed = 0.2 + Math.random() * 0.8;
+                this.size = 0.5 + Math.random() * 1.5;
+                this.sprite = sprites[Math.floor(Math.random() * sprites.length)];
+                // Desvio orgânico individual
+                this.noiseOffset = Math.random() * 100;
+            }
+
+            update() {
+                this.life += 0.002;
+                if (this.life >= this.maxLife) this.init(false);
+
+                // Campo de Fluxo Orgânico (Pseudo-Simplex)
+                const angle = (Math.sin(this.x * 0.005 + time) + Math.cos(this.y * 0.005 + time)) * Math.PI;
+                const distCenter = Math.sqrt((this.x - halfW)**2 + (this.y - halfH)**2);
+                
+                // Atração central viscosa
+                const ax = (halfW - this.x) / (distCenter + 100) * 0.05;
+                const ay = (halfH - this.y) / (distCenter + 100) * 0.05;
+
+                // Força de "Rodovia" - 4 eixos com perturbação
+                const highwayAngle = Math.atan2(this.y - halfH, this.x - halfW);
+                const roadForce = Math.sin(highwayAngle * 4 + time * 0.2) * 0.15;
+
+                this.vx += Math.cos(angle) * 0.1 + ax + (Math.cos(highwayAngle + Math.PI/2) * roadForce);
+                this.vy += Math.sin(angle) * 0.1 + ay + (Math.sin(highwayAngle + Math.PI/2) * roadForce);
+
+                // Viscosidade do meio
+                this.vx *= 0.97;
+                this.vy *= 0.97;
+
+                this.x += this.vx * this.speed;
+                this.y += this.vy * this.speed;
+            }
+
+            draw() {
+                // Curva de opacidade orgânica (fade in / fade out)
+                const alpha = Math.sin((this.life / this.maxLife) * Math.PI);
+                ctx.globalAlpha = alpha * 0.7;
+                const s = this.size * (0.5 + alpha * 0.5);
+                ctx.drawImage(this.sprite, this.x - s, this.y - s, s * 2, s * 2);
+            }
+        }
+
+        function setup() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            halfW = width / 2;
+            halfH = height / 2;
+            createSprites();
+            particles = Array.from({ length: particleCount }, () => new Particle());
+        }
+
+        function animate() {
+            time += 0.005;
+            
+            // Rastro dissipativo mais suave
+            ctx.fillStyle = 'rgba(0, 1, 5, 0.12)';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+            }
+
+            ctx.restore();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', setup);
+        window.onload = () => {
+            setup();
+            animate();
+        };
+    </script>
+</body>
+</html>
