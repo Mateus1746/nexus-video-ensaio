@@ -122,14 +122,14 @@ function initSimulation() {
 // Carregar e processar todos os recursos na inicialização
 async function loadResources() {
     // 1. Carregar Narrative
-    const nResp = await fetch("../pipeline/narrative.json");
+    const nResp = await fetch("/pipeline/narrative.json");
     narrativeData = await nResp.json();
     timelines = narrativeData[0].sub_shot_timings;
     visuals = narrativeData[0].visuals;
     duration = narrativeData[0].duration;
 
     // 2. Carregar GeoJSON
-    const gResp = await fetch("../test_assets/world.json");
+    const gResp = await fetch("/test_assets/world.json");
     worldGeoJSON = await gResp.json();
     const mapCoords = extractPointsFromGeoJSON(worldGeoJSON);
 
@@ -155,7 +155,7 @@ async function loadResources() {
     const iconPromises = uniqueIcons.map(iconPath => {
         return new Promise((resolve) => {
             const img = new Image();
-            img.src = `../${iconPath}`;
+            img.src = `/${iconPath}`;
             img.onload = () => {
                 textureCache[iconPath] = img;
                 // Amostra pontos a partir da imagem
@@ -333,6 +333,7 @@ window.__hf = {
         if (!initialized) {
             await loadResources();
             initialized = true;
+    window.__appReady = true;
         }
         runSimulationToTime(timeSeconds);
         const frameIndex = Math.min(
@@ -362,6 +363,7 @@ window.renderFrame = async (tMs) => {
 window.onload = async () => {
     await loadResources();
     initialized = true;
+
 
     const isHeadless = new URLSearchParams(window.location.search).get("headless") === "true";
     if (!isHeadless) {

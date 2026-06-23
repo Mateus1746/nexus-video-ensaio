@@ -1,0 +1,502 @@
+[
+  {
+    "word": "A",
+    "start": 0.0,
+    "end": 0.345
+  },
+  {
+    "word": "Guerra",
+    "start": 0.345,
+    "end": 0.691
+  },
+  {
+    "word": "Fria.",
+    "start": 0.691,
+    "end": 1.036
+  },
+  {
+    "word": "Um",
+    "start": 1.036,
+    "end": 1.381
+  },
+  {
+    "word": "período",
+    "start": 1.381,
+    "end": 1.726
+  },
+  {
+    "word": "de",
+    "start": 1.726,
+    "end": 2.071
+  },
+  {
+    "word": "tensão",
+    "start": 2.071,
+    "end": 2.417
+  },
+  {
+    "word": "extrema",
+    "start": 2.417,
+    "end": 2.762
+  },
+  {
+    "word": "que",
+    "start": 2.762,
+    "end": 3.107
+  },
+  {
+    "word": "moldou",
+    "start": 3.107,
+    "end": 3.453
+  },
+  {
+    "word": "o",
+    "start": 3.453,
+    "end": 3.798
+  },
+  {
+    "word": "mundo",
+    "start": 3.798,
+    "end": 4.143
+  },
+  {
+    "word": "moderno.",
+    "start": 4.143,
+    "end": 4.488
+  },
+  {
+    "word": "Duas",
+    "start": 4.488,
+    "end": 4.833
+  },
+  {
+    "word": "superpotências,",
+    "start": 4.833,
+    "end": 5.179
+  },
+  {
+    "word": "Estados",
+    "start": 5.179,
+    "end": 5.524
+  },
+  {
+    "word": "Unidos",
+    "start": 5.524,
+    "end": 5.869
+  },
+  {
+    "word": "e",
+    "start": 5.869,
+    "end": 6.215
+  },
+  {
+    "word": "União",
+    "start": 6.215,
+    "end": 6.56
+  },
+  {
+    "word": "Soviética,",
+    "start": 6.56,
+    "end": 6.905
+  },
+  {
+    "word": "armadas",
+    "start": 6.905,
+    "end": 7.25
+  },
+  {
+    "word": "até",
+    "start": 7.25,
+    "end": 7.596
+  },
+  {
+    "word": "os",
+    "start": 7.596,
+    "end": 7.941
+  },
+  {
+    "word": "dentes,",
+    "start": 7.941,
+    "end": 8.286
+  },
+  {
+    "word": "com",
+    "start": 8.286,
+    "end": 8.631
+  },
+  {
+    "word": "armas",
+    "start": 8.631,
+    "end": 8.976
+  },
+  {
+    "word": "nucleares.",
+    "start": 8.976,
+    "end": 9.322
+  },
+  {
+    "word": "Não",
+    "start": 9.322,
+    "end": 9.667
+  },
+  {
+    "word": "houve",
+    "start": 9.667,
+    "end": 10.012
+  },
+  {
+    "word": "um",
+    "start": 10.012,
+    "end": 10.357
+  },
+  {
+    "word": "combate",
+    "start": 10.357,
+    "end": 10.703
+  },
+  {
+    "word": "direto",
+    "start": 10.703,
+    "end": 11.048
+  },
+  {
+    "word": "entre",
+    "start": 11.048,
+    "end": 11.393
+  },
+  {
+    "word": "as",
+    "start": 11.393,
+    "end": 11.739
+  },
+  {
+    "word": "duas,",
+    "start": 11.739,
+    "end": 12.084
+  },
+  {
+    "word": "mas",
+    "start": 12.084,
+    "end": 12.429
+  },
+  {
+    "word": "conflitos",
+    "start": 12.429,
+    "end": 12.774
+  },
+  {
+    "word": "regionais",
+    "start": 12.774,
+    "end": 13.12
+  },
+  {
+    "word": "proxy",
+    "start": 13.12,
+    "end": 13.465
+  },
+  {
+    "word": "pipocaram",
+    "start": 13.465,
+    "end": 13.81
+  },
+  {
+    "word": "pelo",
+    "start": 13.81,
+    "end": 14.155
+  },
+  {
+    "word": "globo.",
+    "start": 14.155,
+    "end": 14.501
+  },
+  {
+    "word": "Coreia,",
+    "start": 14.501,
+    "end": 14.846
+  },
+  {
+    "word": "Vietnã,",
+    "start": 14.846,
+    "end": 15.191
+  },
+  {
+    "word": "Afeganistão.",
+    "start": 15.191,
+    "end": 15.536
+  },
+  {
+    "word": "A",
+    "start": 15.536,
+    "end": 15.882
+  },
+  {
+    "word": "ameaça",
+    "start": 15.882,
+    "end": 16.227
+  },
+  {
+    "word": "de",
+    "start": 16.227,
+    "end": 16.572
+  },
+  {
+    "word": "aniquilação",
+    "start": 16.572,
+    "end": 16.917
+  },
+  {
+    "word": "nuclear",
+    "start": 16.917,
+    "end": 17.262
+  },
+  {
+    "word": "pairava",
+    "start": 17.262,
+    "end": 17.608
+  },
+  {
+    "word": "no",
+    "start": 17.608,
+    "end": 17.953
+  },
+  {
+    "word": "ar.",
+    "start": 17.953,
+    "end": 18.298
+  },
+  {
+    "word": "A",
+    "start": 18.298,
+    "end": 18.643
+  },
+  {
+    "word": "corrida",
+    "start": 18.643,
+    "end": 18.989
+  },
+  {
+    "word": "espacial",
+    "start": 18.989,
+    "end": 19.334
+  },
+  {
+    "word": "foi",
+    "start": 19.334,
+    "end": 19.679
+  },
+  {
+    "word": "outro",
+    "start": 19.679,
+    "end": 20.024
+  },
+  {
+    "word": "campo",
+    "start": 20.024,
+    "end": 20.37
+  },
+  {
+    "word": "de",
+    "start": 20.37,
+    "end": 20.715
+  },
+  {
+    "word": "batalha,",
+    "start": 20.715,
+    "end": 21.06
+  },
+  {
+    "word": "com",
+    "start": 21.06,
+    "end": 21.405
+  },
+  {
+    "word": "a",
+    "start": 21.405,
+    "end": 21.751
+  },
+  {
+    "word": "Lua",
+    "start": 21.751,
+    "end": 22.096
+  },
+  {
+    "word": "como",
+    "start": 22.096,
+    "end": 22.441
+  },
+  {
+    "word": "prêmio",
+    "start": 22.441,
+    "end": 22.787
+  },
+  {
+    "word": "final.",
+    "start": 22.787,
+    "end": 23.132
+  },
+  {
+    "word": "Espionagem,",
+    "start": 23.132,
+    "end": 23.477
+  },
+  {
+    "word": "propaganda",
+    "start": 23.477,
+    "end": 23.822
+  },
+  {
+    "word": "e",
+    "start": 23.822,
+    "end": 24.168
+  },
+  {
+    "word": "a",
+    "start": 24.168,
+    "end": 24.513
+  },
+  {
+    "word": "cortina",
+    "start": 24.513,
+    "end": 24.858
+  },
+  {
+    "word": "de",
+    "start": 24.858,
+    "end": 25.203
+  },
+  {
+    "word": "ferro",
+    "start": 25.203,
+    "end": 25.549
+  },
+  {
+    "word": "dividindo",
+    "start": 25.549,
+    "end": 25.894
+  },
+  {
+    "word": "a",
+    "start": 25.894,
+    "end": 26.239
+  },
+  {
+    "word": "Europa.",
+    "start": 26.239,
+    "end": 26.584
+  },
+  {
+    "word": "Décadas",
+    "start": 26.584,
+    "end": 26.93
+  },
+  {
+    "word": "de",
+    "start": 26.93,
+    "end": 27.275
+  },
+  {
+    "word": "medo,",
+    "start": 27.275,
+    "end": 27.62
+  },
+  {
+    "word": "diplomacia",
+    "start": 27.62,
+    "end": 27.965
+  },
+  {
+    "word": "no",
+    "start": 27.965,
+    "end": 28.311
+  },
+  {
+    "word": "limite",
+    "start": 28.311,
+    "end": 28.656
+  },
+  {
+    "word": "e",
+    "start": 28.656,
+    "end": 29.001
+  },
+  {
+    "word": "uma",
+    "start": 29.001,
+    "end": 29.346
+  },
+  {
+    "word": "corrida",
+    "start": 29.346,
+    "end": 29.692
+  },
+  {
+    "word": "armamentista",
+    "start": 29.692,
+    "end": 30.037
+  },
+  {
+    "word": "sem",
+    "start": 30.037,
+    "end": 30.382
+  },
+  {
+    "word": "precedentes.",
+    "start": 30.382,
+    "end": 30.727
+  },
+  {
+    "word": "O",
+    "start": 30.727,
+    "end": 31.073
+  },
+  {
+    "word": "mundo",
+    "start": 31.073,
+    "end": 31.418
+  },
+  {
+    "word": "prendeu",
+    "start": 31.418,
+    "end": 31.763
+  },
+  {
+    "word": "a",
+    "start": 31.763,
+    "end": 32.108
+  },
+  {
+    "word": "respiração",
+    "start": 32.108,
+    "end": 32.453
+  },
+  {
+    "word": "até",
+    "start": 32.453,
+    "end": 32.799
+  },
+  {
+    "word": "o",
+    "start": 32.799,
+    "end": 33.144
+  },
+  {
+    "word": "fim",
+    "start": 33.144,
+    "end": 33.489
+  },
+  {
+    "word": "da",
+    "start": 33.489,
+    "end": 33.834
+  },
+  {
+    "word": "União",
+    "start": 33.834,
+    "end": 34.18
+  },
+  {
+    "word": "Soviética.",
+    "start": 34.18,
+    "end": 34.525
+  }
+]

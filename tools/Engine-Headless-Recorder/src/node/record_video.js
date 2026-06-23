@@ -33,7 +33,7 @@ process.argv.slice(2).forEach(val => {
 
 // Configurações padrão com parâmetros extraídos da CLI
 const PROJECT_NAME = args.project || 'olhos';
-const CANVAS_SELECTOR = args.canvas || '#nox-canvas';
+const CANVAS_SELECTOR = args.canvas || '#video-canvas';
 const DURATION_S = args.duration || 35;
 const FPS = args.fps || 60;
 const BITRATE = args.bitrate || 6000000;
@@ -113,35 +113,99 @@ function startLocalServer() {
 // MODO CPU: FFmpeg + page.screenshot() paralelo
 // Evita WebCodecs em modo software (lento). Usa x264 ultrafast via FFmpeg pipe.
 // ══════════════════════════════════════════════════════════════════════════════
-async function renderWorker(browser, projectUrl, canvasSelector, frameIndices, frameIntervalMs, captureWidth, captureHeight, tempDir) {
+async function renderWorker(browser, projectUrl, canvasSelector, frameIndices, frameIntervalMs, captureWidth, captureHeight) {
   const page = await browser.newPage();
-  page.on('console', msg => { if (msg.type() === 'error') console.error(`[BROWSER ERR] ${msg.text()}`); });
-  page.on('pageerror', err => console.error(`[BROWSER ERROR] ${err.toString()}`));
-  await page.goto(projectUrl, { waitUntil: 'networkidle0' });
-  await page.evaluate(() => document.fonts.ready);
+  page.setDefaultTimeout(0);
+  page.setDefaultNavigationTimeout(60000);
 
-  // Inicializa cena se disponível
-  await page.evaluate(async () => {
-    if (typeof window.initializeScene === 'function') await window.initializeScene();
-    if (typeof window.__appReady !== 'undefined') {
-      let attempts = 0;
-      while (!window.__appReady && attempts++ < 100) await new Promise(r => setTimeout(r, 50));
+  page.on('console', msg => {
+    if (['error', 'warning'].includes(msg.type()))
+      console.log(`[BROWSER ${msg.type().toUpperCase()}] ${msg.text()}`);
+  });
+  page.on('pageerror', err => console.error(`[PAGE ERROR] ${err.message}`));
+
+  // 1. Navegar — domcontentloaded é suficiente e não trava com WebSockets
+  await page.goto(projectUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+  // 2. Fontes com fallback de timeout
+  await page.evaluate(() =>
+    Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 5000))])
+  );
+
+  // 3. Inicialização da app com diagnóstico
+  const ready = await page.evaluate(async () => {
+    if (typeof window.initializeScene === 'function') {
+      try { await window.initializeScene(); } catch(e) { console.error('initializeScene:', e.message); }
     }
+
+    let attempts = 0;
+    while (!window.__appReady && attempts++ < 200) { // 10s máximo
+      await new Promise(r => setTimeout(r, 50));
+    }
+
+    return {
+      ready: !!window.__appReady,
+      hasRenderFrame: typeof window.renderFrame === 'function',
+      attempts
+    };
   });
 
+  console.log(`[WORKER] Estado inicial:`, JSON.stringify(ready));
+
+  if (!ready.hasRenderFrame) {
+    console.warn('[WORKER] window.renderFrame não encontrado — frames serão capturas estáticas');
+  }
+
+  // 4. Loop de captura
   const frames = [];
   for (const frameIndex of frameIndices) {
     const timeMs = frameIndex * frameIntervalMs;
-    await page.evaluate((t, sel) => {
+
+    await page.evaluate((t) => {
       if (typeof window.renderFrame === 'function') window.renderFrame(t);
-    }, timeMs, canvasSelector);
-    const jpeg = await page.screenshot({
-      type: 'jpeg',
-      quality: 90,
-      clip: { x: 0, y: 0, width: captureWidth, height: captureHeight }
-    });
-    frames.push({ frameIndex, jpeg });
+    }, timeMs);
+
+    // Pequeno delay para SVG/React re-renderizar
+    await new Promise(r => setTimeout(r, 16)); // ~1 frame de 60fps
+
+    const jpegBase64 = await page.evaluate(async (sel) => {
+      const el = document.querySelector('#video-canvas') || document.querySelector(sel) || document.querySelector('canvas') || document.querySelector('svg');
+      if (!el) throw new Error(`Elemento não encontrado: ${sel}`);
+
+      if (el.tagName === 'CANVAS') {
+        return new Promise(r => el.toBlob(b => {
+          const fr = new FileReader();
+          fr.onloadend = () => r(fr.result.split(',')[1]);
+          fr.readAsDataURL(b);
+        }, 'image/jpeg', 0.85));
+      }
+
+      // SVG → canvas
+      const w = el.getBoundingClientRect().width || 1280;
+      const h = el.getBoundingClientRect().height || 720;
+      const offscreen = document.createElement('canvas');
+      offscreen.width = w; offscreen.height = h;
+      const ctx = offscreen.getContext('2d');
+      const blob = new Blob([new XMLSerializer().serializeToString(el)], {type:'image/svg+xml'});
+      const url = URL.createObjectURL(blob);
+      await new Promise((res, rej) => {
+        const img = new Image(w, h);
+        img.onload = () => { ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url); res(); };
+        img.onerror = rej;
+        img.src = url;
+      });
+      return new Promise(r => offscreen.toBlob(b => {
+        const fr = new FileReader();
+        fr.onloadend = () => r(fr.result.split(',')[1]);
+        fr.readAsDataURL(b);
+      }, 'image/jpeg', 0.85));
+    }, canvasSelector);
+
+    frames.push({ frameIndex, jpeg: Buffer.from(jpegBase64, 'base64') });
+
+    if (frameIndex % 25 === 0) console.log(`[WORKER] Frame ${frameIndex}/${frameIndices.at(-1)}`);
   }
+
   await page.close();
   return frames;
 }
@@ -182,7 +246,7 @@ async function recordCPU() {
       defaultViewport: { width: CAPTURE_WIDTH, height: CAPTURE_HEIGHT }
     });
 
-    const projectUrl = `http://127.0.0.1:${PORT}/nexus_media/video/${PROJECT_NAME}/index.html?headless=true`;
+    const projectUrl = `http://127.0.0.1:${PORT}/web/index.html?headless=true`;
 
     // Dividir frames entre workers
     const chunkSize = Math.ceil(totalFrames / CPU_WORKERS);
@@ -291,7 +355,7 @@ async function record() {
     page.on('pageerror', err => console.error(`[BROWSER ERROR] ${err.toString()}`));
 
     // Abrir a fábrica web correspondente usando o servidor local
-    const projectUrl = `http://127.0.0.1:${PORT}/${PROJECT_NAME}/index.html?headless=true`;
+    const projectUrl = `http://127.0.0.1:${PORT}/web/index.html?headless=true`;
     console.log(`[RECORDER] Navegando para ${projectUrl}`);
     await page.goto(projectUrl, { waitUntil: 'networkidle0' });
 
