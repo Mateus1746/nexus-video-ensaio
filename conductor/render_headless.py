@@ -51,16 +51,18 @@ def render_story(factory, scene_id):
             f.write(modified_content)
         
         # 5. Compilar os assets web
-        print("📦 Compilando assets do projeto (npm run build)...")
-        subprocess.run(["npm", "run", "build"], check=True)
+        print("📦 Pulando npm run build (projeto estático)...")
 
         # 6. Executar o Engine-Headless-Recorder
         print("🎥 Executando Engine-Headless-Recorder...")
         recorder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../tools/Engine-Headless-Recorder/src/node/record_video.js"))
         
+        # Limitar duração para 30 segundos
+        duration_rounded = min(duration_rounded, 30.0)
+
         cmd = [
             "node", recorder_path,
-            "--project=ensaio/dist",
+            "--project=web",
             "--canvas=#video-canvas",
             f"--duration={duration_rounded}",
             "--fps=25",
@@ -78,7 +80,6 @@ def render_story(factory, scene_id):
         print("🧼 Restaurando o estado original de web/app.js...")
         with open(app_js_path, 'w', encoding='utf-8') as f:
             f.write(original_content)
-        subprocess.run(["npm", "run", "build"], check=True)
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:

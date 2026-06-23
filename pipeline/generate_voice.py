@@ -18,7 +18,7 @@ def generate_narration(script_path, output_path, voice='am_adam'):
 
     # Inicializa pipeline (a = American English)
     # Kokoro baixa o modelo automaticamente (~80MB)
-    pipeline = KPipeline(lang_code='a')
+    pipeline = KPipeline(lang_code='p')
     
     # Gera gerador de trechos (Kokoro lida bem com textos longos segmentando-os)
     generator = pipeline(text, voice=voice, speed=1.0)

@@ -8,7 +8,10 @@ def run_unified_pipeline():
     # Passo 1: Captação de Notícias e Geração de Roteiros
     print("\n--- Passo 1: Captação de Notícias (Crawler) ---")
     try:
-        subprocess.run(["uv", "run", "nexus_crawler.py"], check=True)
+        if os.path.exists("nexus_crawler.py"):
+            subprocess.run(["uv", "run", "nexus_crawler.py"], check=True)
+        else:
+            print("⚠️ crawler não encontrado, pulando...")
     except subprocess.CalledProcessError as e:
         print(f"❌ Erro ao rodar o crawler: {e}")
         return
