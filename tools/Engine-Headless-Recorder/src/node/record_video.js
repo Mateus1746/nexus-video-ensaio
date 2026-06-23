@@ -162,7 +162,7 @@ async function recordCPU() {
       defaultViewport: { width: CAPTURE_WIDTH, height: CAPTURE_HEIGHT }
     });
 
-    const projectUrl = `http://127.0.0.1:${PORT}/nexus_media/video/${PROJECT_NAME}/index.html?headless=true`;
+    const projectUrl = `http://127.0.0.1:${PORT}/${PROJECT_NAME}/index.html?headless=true`;
 
     // Dividir frames entre workers
     const chunkSize = Math.ceil(totalFrames / CPU_WORKERS);

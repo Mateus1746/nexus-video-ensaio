@@ -1,76 +1,30 @@
 [
   {
     "id": "cold_war_full",
-    "audio_file": "/home/mateus/.gemini/projetos/nexus_media/video/ensaio/pipeline/sync_drive/audio_ready/ensaio/full_documentary/script/script.wav",
-    "duration": 571.79,
+    "audio_file": "/app/pipeline/sync_drive/audio_ready/ensaio/full_documentary/script/script.wav",
+    "duration": 51.975,
     "sub_shot_timings": [
-      9.66,
-      11.58,
-      15.96,
-      15.96,
-      15.96,
-      15.96,
-      15.96,
-      30.96,
-      49.6,
-      64.6,
-      65.49,
-      67.21,
-      67.53,
-      82.53,
-      93.54,
-      99.05,
-      104.18,
-      112.16,
-      117.93,
-      120.05,
-      127.73,
-      135.24,
-      145.79,
-      153.61,
-      168.61,
-      174.46,
-      182.32,
-      189.28,
-      193.39,
-      193.49,
-      195.77,
-      198.19,
-      213.19,
-      229.54,
-      237.55,
-      246.13,
-      261.13,
-      338.17,
-      338.27,
-      338.27,
-      338.27,
-      338.27,
-      353.27,
-      369.44,
-      373.62,
-      374.33,
-      389.33,
-      395.36,
-      410.36,
-      418.13,
-      433.13,
-      436.02,
-      436.02,
-      436.02,
-      437.62,
-      452.62,
-      474.47,
-      474.47,
-      474.47,
-      489.47,
-      514.04,
-      525.38,
-      540.38,
-      540.95,
-      555.3,
-      555.3,
-      556.71
+      6.04,
+      8.38,
+      8.38,
+      8.38,
+      8.38,
+      8.38,
+      8.72,
+      19.45,
+      22.13,
+      22.13,
+      22.13,
+      22.13,
+      22.13,
+      22.13,
+      22.13,
+      22.13,
+      22.13,
+      22.13,
+      22.13,
+      22.13,
+      22.13
     ],
     "visuals": [
       {
@@ -97,7 +51,7 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_icon": "assets/icon_biohazard.png"
+          "target_icon": "assets/icon_berlin_wall.png"
         }
       },
       {
@@ -106,16 +60,7 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
+          "target_icon": "assets/icon_atom.png"
         }
       },
       {
@@ -142,241 +87,7 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_icon": "assets/icon_key_intel.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_star.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
           "target_icon": "assets/icon_gear.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_peace_sign.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_radar.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_wheat.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_jet_plane.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_submarine.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_radar.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_berlin_wall.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_handshake.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_dollar_sign.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_star.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_dollar_sign.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_text": "Phase 1: Acceleration"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_atom.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_satellite.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_satellite.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_atom.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_computer.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
         }
       },
       {
@@ -403,7 +114,34 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_icon": "assets/icon_gear.png"
+          "target_icon": "assets/icon_satellite.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_berlin_wall.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_handshake.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_biohazard.png"
         }
       },
       {
@@ -421,7 +159,7 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_icon": "assets/icon_computer.png"
+          "target_map": "test_assets/world.json"
         }
       },
       {
@@ -430,7 +168,43 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
+          "target_icon": "assets/icon_atom.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_biohazard.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_star.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_biohazard.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_text": "Acelera\u00e7\u00e3o Tecnol\u00f3gica"
         }
       },
       {
@@ -448,241 +222,7 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_icon": "assets/icon_radar.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_television.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
           "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_hammer_sickle.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_television.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_gear.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_barrel.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_biohazard.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_dollar_sign.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_barrel.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_submarine.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_bread_line.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_text": "Phase 3: Final Calculation"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_biohazard.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_dollar_sign.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_gear.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "assets/icon_dollar_sign.png"
         }
       }
     ],
