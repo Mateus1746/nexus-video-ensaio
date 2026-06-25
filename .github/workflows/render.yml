@@ -2,8 +2,14 @@ name: Nexus Render
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * 1'
+  push:
+    paths:
+      - 'pipeline/sync_drive/audio_ready/**'
+      - 'conductor/**'
+      - 'web/**'
+      - 'tools/Engine-Headless-Recorder/**'
+      - 'package.json'
+      - 'package-lock.json'
 
 jobs:
   render:
@@ -12,30 +18,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup rclone
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq rclone
-          mkdir -p ~/.config/rclone
-          echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
-
-      - name: Pull audio from Drive
-        run: |
-          rclone sync "gdrive:nexus_pipeline/audio_ready/ensaio" \
-            pipeline/sync_drive/audio_ready/ -P
-          rclone sync "gdrive:nexus_pipeline/custom_voices" \
-            pipeline/sync_drive/custom_voices/ -P
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Build web assets
-        run: npm run build
+      - run: npm run build
 
       - name: Setup Chrome
         uses: browser-actions/setup-chrome@v1
@@ -43,15 +33,14 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt-get install -y -qq ffmpeg
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install uv
-        run: pip install uv
+        run: pip install -q uv
 
-      - name: Render all scenes
+      - name: Render scenes
         run: |
           mkdir -p pipeline/sync_drive/exports
           find pipeline/sync_drive/audio_ready -name "*.wav" | while read wav; do
@@ -59,11 +48,11 @@ jobs:
             factory=$(echo "$rel" | cut -d/ -f1)
             scene=$(echo "$rel" | cut -d/ -f2)
             scene_id=$(basename "$wav" .wav)
-            echo "🎥 Rendering: $factory / $scene_id"
-            uv run python conductor/render_headless.py "$factory" "$scene" || echo "⚠️ Failed: $factory/$scene_id"
+            echo "🎥 $factory / $scene_id"
+            uv run python conductor/render_headless.py "$factory" "$scene" || true
           done
 
-      - name: Upload MP4 artifacts
+      - name: Upload MP4s
         uses: actions/upload-artifact@v4
         with:
           name: renders-ensaio
