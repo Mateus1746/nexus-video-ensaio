@@ -327,12 +327,23 @@ function runSimulationToTime(timeSeconds) {
 // Protocolo de Gravação HyperFrames
 let initialized = false;
 
+window.__appReady = false;
+
+window.initializeScene = async function() {
+    if (!initialized) {
+        await loadResources();
+        initialized = true;
+        window.__appReady = true;
+    }
+};
+
 window.__hf = {
     duration: duration,
     seek: async (timeSeconds) => {
         if (!initialized) {
             await loadResources();
             initialized = true;
+            window.__appReady = true;
         }
         runSimulationToTime(timeSeconds);
         const frameIndex = Math.min(
@@ -362,6 +373,7 @@ window.renderFrame = async (tMs) => {
 window.onload = async () => {
     await loadResources();
     initialized = true;
+    window.__appReady = true;
 
     const isHeadless = new URLSearchParams(window.location.search).get("headless") === "true";
     if (!isHeadless) {
