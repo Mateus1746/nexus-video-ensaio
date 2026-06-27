@@ -2,7 +2,7 @@
 // SOVEREIGN ENSAY - PARTICLE TRANSITION FRONTEND ENGINE (SOTA 2026)
 // ============================================================
 
-const numParticles = 2000;
+const numParticles = 6000;
 const targetFps = 30;
 const canvas = document.getElementById("video-canvas");
 const ctx = canvas.getContext("2d");
@@ -255,8 +255,8 @@ function drawFrame(currentFrameIndex) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Linhas técnicas decorativas
-    ctx.strokeStyle = "rgba(0, 242, 255, 0.02)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(0, 242, 255, 0.15)"; // increased opacity
+    ctx.lineWidth = 2; // increased thickness
     ctx.beginPath();
     for (let x = 100; x < canvas.width; x += 200) {
         ctx.moveTo(x, 0);
@@ -278,9 +278,9 @@ function drawFrame(currentFrameIndex) {
         
         // Glow cyan (#00f2ff) a azul escuro
         const r = 0;
-        const g = Math.round(150 + factor * 105);
+        const g = Math.round(200 + factor * 55);
         const b = 255;
-        const alpha = 0.2 + factor * 0.6;
+        const alpha = 0.6 + factor * 0.4; // increased base opacity
 
         ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -291,7 +291,7 @@ function drawFrame(currentFrameIndex) {
         for (let h = 0; h < 5; h++) {
             ctx.lineTo(p.history[h].x, p.history[h].y);
         }
-        ctx.lineWidth = p.z * 1.2;
+        ctx.lineWidth = p.z * 2.0; // increased line width
         ctx.stroke();
     }
 
