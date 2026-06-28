@@ -295,7 +295,10 @@ async function record() {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-web-security',
-        '--font-render-hinting=none'
+        '--font-render-hinting=none',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding'
       ],
       defaultViewport: { width: 1080, height: 1080 }
     });
@@ -349,8 +352,8 @@ async function record() {
         }
         await window.recorder.recordFrame(canvas, timeMs);
 
-        // Yield nativo via requestAnimationFrame para sincronizar a thread principal com a GPU e permitir processamento do WebCodecs
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        // Yield via setTimeout(0) para permitir que WebCodecs e GPU processem
+        await new Promise(resolve => setTimeout(resolve, 0));
 
         // Imprime o progresso no console do browser (capturado por page.on('console'))
         if ((i + 1) % fps === 0) {
