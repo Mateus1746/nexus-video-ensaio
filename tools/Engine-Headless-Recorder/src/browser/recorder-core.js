@@ -75,7 +75,8 @@ class CoreRecorder {
       height: this.height,
       bitrate: this.bitrate,
       framerate: this.fps,
-      latencyMode: 'quality'
+      latencyMode: 'quality',
+      hardwareAcceleration: 'prefer-hardware'
     };
 
     this.encoder = new VideoEncoder(init);

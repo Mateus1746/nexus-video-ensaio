@@ -198,17 +198,19 @@ async function recordCPU() {
     // Viewport define a resolução máxima. Upscale 1920x1080 é feito no FFmpeg.
     const VIEWPORT_W = 1280, VIEWPORT_H = 720;
     browser = await puppeteer.launch({
-      headless: true,
+      headless: 'new',
       protocolTimeout: 0,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--use-gl=swiftshader',
-        '--enable-unsafe-swiftshader',
-        '--ignore-gpu-blacklist',
         '--disable-web-security',
-        '--font-render-hinting=none'
+        '--font-render-hinting=none',
+        '--enable-gpu',
+        '--use-gl=angle',
+        '--use-angle=vulkan',
+        '--enable-features=Vulkan,UseOzonePlatform',
+        '--ozone-platform=headless'
       ],
       defaultViewport: { width: VIEWPORT_W, height: VIEWPORT_H }
     });
@@ -285,17 +287,19 @@ async function record() {
 
     // Iniciar Puppeteer
     browser = await puppeteer.launch({
-      headless: true,
+      headless: 'new',
       protocolTimeout: 0,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--use-gl=swiftshader',
-        '--enable-unsafe-swiftshader',
-        '--ignore-gpu-blacklist',
         '--disable-web-security',
-        '--font-render-hinting=none'
+        '--font-render-hinting=none',
+        '--enable-gpu',
+        '--use-gl=angle',
+        '--use-angle=vulkan',
+        '--enable-features=Vulkan,UseOzonePlatform',
+        '--ozone-platform=headless'
       ],
       defaultViewport: { width: 1080, height: 1080 }
     });
