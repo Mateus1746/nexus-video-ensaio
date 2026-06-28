@@ -46,7 +46,7 @@ def render_story(factory, scene_id, **kwargs):
         "--fps=25",
         f"--output={output_path}"
     ]
-    
+
     print(f"🚀 Rodando comando: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
     print(f"🎉 Sucesso! Vídeo gravado e salvo em: {output_path}")
