@@ -2,7 +2,7 @@
 // SOVEREIGN ENSAY - PARTICLE TRANSITION FRONTEND ENGINE (SOTA 2026)
 // ============================================================
 
-const numParticles = 2000;
+const numParticles = 6000;
 const targetFps = 30;
 const canvas = document.getElementById("video-canvas");
 const ctx = canvas.getContext("2d");
@@ -35,24 +35,43 @@ function project(lon, lat) {
     return { x, y };
 }
 
-// Extrai e projeta pontos do GeoJSON
+
+// Extrai e projeta pontos do GeoJSON com espalhamento orgânico para preenchimento
 function extractPointsFromGeoJSON(geojson) {
     const coords = [];
+    let pointSeed = 0;
+    function deterministicRandomLocal() {
+        let x = Math.sin(pointSeed++) * 10000;
+        return x - Math.floor(x);
+    }
+
     geojson.features.forEach(f => {
         if (f.geometry.type === "Polygon") {
             f.geometry.coordinates.forEach(ring => {
-                ring.forEach(c => coords.push(project(c[0], c[1])));
+                ring.forEach(c => {
+                    const p = project(c[0], c[1]);
+                    // Adiciona ruído espacial para o mapa ficar menos esparso e mais orgânico
+                    p.x += (deterministicRandomLocal() - 0.5) * 8.0;
+                    p.y += (deterministicRandomLocal() - 0.5) * 8.0;
+                    coords.push(p);
+                });
             });
         } else if (f.geometry.type === "MultiPolygon") {
             f.geometry.coordinates.forEach(poly => {
                 poly.forEach(ring => {
-                    ring.forEach(c => coords.push(project(c[0], c[1])));
+                    ring.forEach(c => {
+                        const p = project(c[0], c[1]);
+                        p.x += (deterministicRandomLocal() - 0.5) * 8.0;
+                        p.y += (deterministicRandomLocal() - 0.5) * 8.0;
+                        coords.push(p);
+                    });
                 });
             });
         }
     });
     return coords;
 }
+
 
 // Amostra pixels de uma imagem carregada
 function samplePointsFromImage(img, count) {
@@ -112,7 +131,7 @@ function initSimulation() {
             noiseOffset: deterministicRandom() * 1000,
             history: []
         };
-        for (let h = 0; h < 5; h++) {
+        for (let h = 0; h < 12; h++) {
             p.history.push({ x: p.x, y: p.y });
         }
         particles.push(p);
@@ -200,7 +219,7 @@ function updatePhysics(dt, time, morphStrength = 1.0) {
         const p = particles[i];
 
         // Shift trails
-        for (let h = 4; h > 0; h--) {
+        for (let h = 11; h > 0; h--) {
             p.history[h].x = p.history[h-1].x;
             p.history[h].y = p.history[h-1].y;
         }
@@ -225,23 +244,34 @@ function updatePhysics(dt, time, morphStrength = 1.0) {
         p.vx = (p.vx + ax) * 0.95;
         p.vy = (p.vy + ay) * 0.95;
 
+
         // Vibração browniana
         const vibSeed = time * 3.0 + p.noiseOffset;
         p.vx += Math.sin(vibSeed * 1.2) * 0.08 * p.z;
         p.vy += Math.cos(vibSeed * 0.9) * 0.08 * p.z;
 
-        // Atração magnética de Morph
+        // Atração magnética de Morph com variação fluida
         const toTargetX = p.tx - p.x;
         const toTargetY = p.ty - p.y;
         const distTarget = Math.sqrt(toTargetX*toTargetX + toTargetY*toTargetY) || 0.1;
         
-        const pullX = (toTargetX / distTarget) * Math.min(distTarget * 0.05, 5.0) * morphStrength;
-        const pullY = (toTargetY / distTarget) * Math.min(distTarget * 0.05, 5.0) * morphStrength;
+        // Efeito elástico que estica mais quando distante
+        const elastic = Math.min(distTarget * 0.02, 3.0);
+        const pullX = (toTargetX / distTarget) * elastic * morphStrength;
+        const pullY = (toTargetY / distTarget) * elastic * morphStrength;
 
-        p.vx += pullX;
-        p.vy += pullY;
-        p.vx *= (1.0 - (0.15 * morphStrength));
-        p.vy *= (1.0 - (0.15 * morphStrength));
+        // Efeito de redemoinho (vortex) próximo ao alvo
+        const vortexPower = Math.max(0, 1.0 - distTarget / 200.0) * morphStrength * 0.5;
+        const vortexX = -pullY * vortexPower;
+        const vortexY = pullX * vortexPower;
+
+        p.vx += pullX + vortexX;
+        p.vy += pullY + vortexY;
+
+        const drag = 1.0 - (0.10 * morphStrength);
+        p.vx *= drag;
+        p.vy *= drag;
+
 
         p.x += p.vx;
         p.y += p.vy;
@@ -250,52 +280,100 @@ function updatePhysics(dt, time, morphStrength = 1.0) {
 
 // Desenhar frame no canvas
 function drawFrame(currentFrameIndex) {
-    // Fundo esmero de escuridão profunda
-    ctx.fillStyle = "#030305";
+
+    // Fundo esmero de escuridão profunda com vignette
+    const bgGradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 200, canvas.width/2, canvas.height/2, canvas.width);
+    bgGradient.addColorStop(0, "#080b12");
+    bgGradient.addColorStop(1, "#020305");
+    ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Linhas técnicas decorativas
-    ctx.strokeStyle = "rgba(0, 242, 255, 0.02)";
-    ctx.lineWidth = 1;
+    // Linhas técnicas decorativas animadas
+    const gridOffset = (currentFrameIndex % 200) / 200.0 * 200;
+    ctx.strokeStyle = "rgba(0, 242, 255, 0.08)";
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    for (let x = 100; x < canvas.width; x += 200) {
+    for (let x = gridOffset - 200; x < canvas.width; x += 150) {
         ctx.moveTo(x, 0);
         ctx.lineTo(x, canvas.height);
     }
-    for (let y = 100; y < canvas.height; y += 200) {
+    for (let y = gridOffset - 200; y < canvas.height; y += 150) {
         ctx.moveTo(0, y);
         ctx.lineTo(canvas.width, y);
     }
     ctx.stroke();
 
+
+    // HUD Elements direct on canvas
+    ctx.fillStyle = "rgba(0, 242, 255, 0.9)";
+    ctx.font = "bold 18px 'Courier Prime', monospace";
+    ctx.shadowColor = "rgba(0, 242, 255, 0.8)";
+    ctx.shadowBlur = 10;
+
+    const timeStr = (currentFrameIndex / targetFps).toFixed(3);
+    ctx.fillText(`SYS.OP // T+ ${timeStr}s`, 60, 60);
+    ctx.fillText(`TRGT LOCK: [${hudTarget.innerText.toUpperCase()}]`, 60, 90);
+
+    // Dynamic entropy bar
+    const entropy = Math.abs(Math.sin((currentFrameIndex/targetFps)*2.0)) * 100;
+    ctx.fillText(`ENTROPY: ${entropy.toFixed(1)}%`, 60, 120);
+    ctx.fillRect(60, 135, entropy * 2, 4);
+
+    // Crosshair at center
+    ctx.strokeStyle = "rgba(0, 242, 255, 0.5)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width/2 - 20, canvas.height/2);
+    ctx.lineTo(canvas.width/2 + 20, canvas.height/2);
+    ctx.moveTo(canvas.width/2, canvas.height/2 - 20);
+    ctx.lineTo(canvas.width/2, canvas.height/2 + 20);
+    ctx.stroke();
+
+    ctx.shadowBlur = 0; // Reset shadow for particles
+
     // Desenhar partículas
+
+    ctx.globalCompositeOperation = "lighter";
     for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // Bloom de cor baseado na velocidade
+        // Bloom de cor baseado na velocidade e distância do alvo
         const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
-        const factor = Math.min(1.0, Math.max(0.1, speed * 0.04));
-        
-        // Glow cyan (#00f2ff) a azul escuro
-        const r = 0;
-        const g = Math.round(150 + factor * 105);
-        const b = 255;
-        const alpha = 0.2 + factor * 0.6;
+        const toTargetX = p.tx - p.x;
+        const toTargetY = p.ty - p.y;
+        const distTarget = Math.sqrt(toTargetX*toTargetX + toTargetY*toTargetY) || 0.1;
 
-        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        const speedFactor = Math.min(1.0, Math.max(0.0, speed * 0.08));
+        const distFactor = Math.min(1.0, distTarget / 300.0);
+        
+        // Transição de cor: neon cyan quando organizado, laranja/vermelho quando em trânsito
+        const r = Math.round(255 * distFactor);
+        const g = Math.round(242 * (1 - distFactor) + 100 * distFactor);
+        const b = Math.round(255 * (1 - distFactor));
+
+        const alpha = 0.3 + (1 - distFactor) * 0.7; // Brilha mais quando chega no alvo
+
+        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.6})`;
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
 
-        // Desenhar rastro de cauda
+        // Desenhar rastro de cauda com opacidade decrescente
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
-        for (let h = 0; h < 5; h++) {
+        for (let h = 0; h < 12; h++) {
             ctx.lineTo(p.history[h].x, p.history[h].y);
         }
-        ctx.lineWidth = p.z * 1.2;
+        ctx.lineWidth = (p.z * 1.5) + (1 - distFactor) * 1.5;
         ctx.stroke();
+
+        // Ponto central mais brilhante
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.z * 1.2, 0, Math.PI * 2);
+        ctx.fill();
     }
+    ctx.globalCompositeOperation = "source-over";
 
     // Telemetria HUD
+
     const currentTime = currentFrameIndex / targetFps;
     hudTime.innerText = `${currentTime.toFixed(2)}s`;
 }
@@ -327,12 +405,23 @@ function runSimulationToTime(timeSeconds) {
 // Protocolo de Gravação HyperFrames
 let initialized = false;
 
+window.__appReady = false;
+
+window.initializeScene = async function() {
+    if (!initialized) {
+        await loadResources();
+        initialized = true;
+        window.__appReady = true;
+    }
+};
+
 window.__hf = {
     duration: duration,
     seek: async (timeSeconds) => {
         if (!initialized) {
             await loadResources();
             initialized = true;
+            window.__appReady = true;
         }
         runSimulationToTime(timeSeconds);
         const frameIndex = Math.min(
@@ -362,6 +451,7 @@ window.renderFrame = async (tMs) => {
 window.onload = async () => {
     await loadResources();
     initialized = true;
+    window.__appReady = true;
 
     const isHeadless = new URLSearchParams(window.location.search).get("headless") === "true";
     if (!isHeadless) {

@@ -4,11 +4,10 @@ import wave
 import contextlib
 import sys
 
-def render_story(factory, scene_id):
+def render_story(factory, scene_id, **kwargs):
     print(f"🎬 Iniciando Renderização Headless para {factory} / {scene_id}...")
     
     # 1. Definir caminhos
-    app_js_path = "web/app.js"
     wav_path = f"pipeline/sync_drive/audio_ready/{factory}/{scene_id}/{scene_id}.wav"
     output_path = f"pipeline/sync_drive/exports/{factory}_{scene_id}.mp4"
 
@@ -22,64 +21,36 @@ def render_story(factory, scene_id):
         rate = f.getframerate()
         duration = frames / float(rate)
     
-    # Adicionar uma pequena folga de segurança na duração
+    # Adicionar pequena folga de segurança
     duration_rounded = round(duration + 0.2, 2)
     print(f"⏱️ Duração do áudio detectada: {duration_rounded}s")
 
-    # 3. Ler o app.js original para fazer backup
-    with open(app_js_path, 'r', encoding='utf-8') as f:
-        original_content = f.read()
+    # 3. Build dos assets web (se necessário)
+    if os.path.exists("web/build.js"):
+        print("📦 Buildando assets estáticos...")
+        subprocess.run(["node", "web/build.js"], check=True)
+    else:
+        print("📦 Pulando build (sem script de build)...")
 
-    try:
-        # 4. Modificar app.js com os novos defaults
-        modified_content = original_content
-        # Substituir os fallbacks de factory e scene
-        modified_content = modified_content.replace(
-            "const factory = urlParams.get('factory') || 'politica_direita';",
-            f"const factory = urlParams.get('factory') || '{factory}';"
-        )
-        modified_content = modified_content.replace(
-            "const sceneId = urlParams.get('scene') || 'staging';",
-            f"const sceneId = urlParams.get('scene') || '{scene_id}';"
-        )
-        modified_content = modified_content.replace(
-            "const isRecording = urlParams.get('recording') === 'true';",
-            "const isRecording = urlParams.get('recording') === 'true' || urlParams.get('headless') === 'true';"
-        )
+    # 4. Executar o Engine-Headless-Recorder
+    print("🎥 Executando Engine-Headless-Recorder...")
+    recorder_path = os.path.abspath(os.path.join(
+        os.path.dirname(__file__),
+        "../tools/Engine-Headless-Recorder/src/node/record_video.js"
+    ))
 
-        with open(app_js_path, 'w', encoding='utf-8') as f:
-            f.write(modified_content)
-        
-        # 5. Compilar os assets web
-        print("📦 Pulando npm run build (projeto estático)...")
+    cmd = [
+        "node", recorder_path,
+        "--canvas=#video-canvas",
+        f"--duration={duration_rounded}",
+        "--fps=25",
+        f"--output={output_path}"
+    ]
 
-        # 6. Executar o Engine-Headless-Recorder
-        print("🎥 Executando Engine-Headless-Recorder...")
-        recorder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../tools/Engine-Headless-Recorder/src/node/record_video.js"))
-        
-        # Limitar duração para 30 segundos
-        duration_rounded = min(duration_rounded, 30.0)
-
-        cmd = [
-            "node", recorder_path,
-            "--project=web",
-            "--canvas=#video-canvas",
-            f"--duration={duration_rounded}",
-            "--fps=25",
-            f"--output={output_path}"
-        ]
-        
-        print(f"🚀 Rodando comando: {' '.join(cmd)}")
-        # Executar gravador
-        subprocess.run(cmd, check=True)
-        print(f"🎉 Sucesso! Vídeo gravado e salvo em: {output_path}")
-        return True
-
-    finally:
-        # 7. Restaurar o app.js original
-        print("🧼 Restaurando o estado original de web/app.js...")
-        with open(app_js_path, 'w', encoding='utf-8') as f:
-            f.write(original_content)
+    print(f"🚀 Rodando comando: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
+    print(f"🎉 Sucesso! Vídeo gravado e salvo em: {output_path}")
+    return True
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
