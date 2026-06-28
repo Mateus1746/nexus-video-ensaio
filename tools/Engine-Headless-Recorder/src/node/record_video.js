@@ -346,6 +346,13 @@ async function record() {
         throw new Error(`[RECORDER BROWSER] Canvas não encontrado com o seletor: ${canvasSelector}`);
       }
 
+      // Setup de MessageChannel para realizar o yielding ultra-rápido à event loop do Chrome sem o delay de 4ms do setTimeout
+      const channel = new MessageChannel();
+      const yieldToEventLoop = () => new Promise(resolve => {
+        channel.port1.onmessage = () => resolve();
+        channel.port2.postMessage(null);
+      });
+
       const loopStart = Date.now();
       for (let i = 0; i < totFrames; i++) {
         const timeMs = i * intervalMs;
@@ -354,10 +361,8 @@ async function record() {
         }
         await window.recorder.recordFrame(canvas, timeMs);
 
-        // Evita travar a thread principal do Chrome (permite GC, WebCodecs e GPU agirem)
-        if (i % 50 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 0));
-        }
+        // Evita o travamento da thread principal (yield obrigatório a cada frame para WebCodecs e GPU executarem as tarefas agendadas)
+        await yieldToEventLoop();
 
         // Imprime o progresso no console do browser (capturado por page.on('console'))
         if ((i + 1) % fps === 0) {
