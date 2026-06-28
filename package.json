@@ -1,0 +1,11 @@
+{
+  "name": "ensaio",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node web/build.js"
+  },
+  "dependencies": {
+    "puppeteer": "^25.2.1"
+  }
+}

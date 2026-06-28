@@ -2,7 +2,7 @@
 // SOVEREIGN ENSAY - PARTICLE TRANSITION FRONTEND ENGINE (SOTA 2026)
 // ============================================================
 
-const numParticles = 2000;
+const numParticles = 6000;
 const targetFps = 30;
 const canvas = document.getElementById("video-canvas");
 const ctx = canvas.getContext("2d");
@@ -74,6 +74,47 @@ function samplePointsFromImage(img, count) {
                     x: 1920 / 2 + (x - 60) * 6,
                     y: 1080 / 2 + (y - 60) * 6
                 });
+            }
+        }
+    }
+
+    const points = [];
+    simSeed = 99; // Seed para amostragem estática consistente
+    for (let i = 0; i < count; i++) {
+        if (validPixels.length > 0) {
+            const p = validPixels[Math.floor(deterministicRandom() * validPixels.length)];
+            points.push(p);
+        } else {
+            points.push({ x: 1920/2, y: 1080/2 });
+        }
+    }
+    return points;
+}
+
+
+// Amostra pixels de um texto renderizado no canvas
+function samplePointsFromText(text, count) {
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = 1920;
+    tempCanvas.height = 1080;
+    const tCtx = tempCanvas.getContext("2d");
+
+    tCtx.fillStyle = "black";
+    tCtx.fillRect(0, 0, 1920, 1080);
+    tCtx.fillStyle = "white";
+    tCtx.font = "bold 120px 'Space Grotesk', sans-serif";
+    tCtx.textAlign = "center";
+    tCtx.textBaseline = "middle";
+    tCtx.fillText(text, 1920 / 2, 1080 / 2);
+
+    const imgData = tCtx.getImageData(0, 0, 1920, 1080).data;
+    const validPixels = [];
+
+    for (let y = 0; y < 1080; y += 4) { // Pula pixels para performance
+        for (let x = 0; x < 1920; x += 4) {
+            const r = imgData[(y * 1920 + x) * 4];
+            if (r > 128) {
+                validPixels.push({ x, y });
             }
         }
     }
@@ -171,7 +212,20 @@ async function loadResources() {
     });
 
     await Promise.all(iconPromises);
+
+    // 4. Pré-processar textos
+    const uniqueTexts = [...new Set(
+        visuals
+            .map(v => v.particles.target_text)
+            .filter(text => !!text)
+    )];
+
+    uniqueTexts.forEach(text => {
+        sampledShapes[text] = samplePointsFromText(text, numParticles);
+    });
+
     console.log("🚀 All resources and shapes parsed successfully.");
+
 }
 
 // Configura o target das partículas para o visual corrente
@@ -181,6 +235,8 @@ function applyVisualTarget(visual) {
         targetKey = visual.particles.target_icon;
     } else if (visual.particles.target_map) {
         targetKey = visual.particles.target_map;
+    } else if (visual.particles.target_text) {
+        targetKey = visual.particles.target_text;
     }
 
     const points = sampledShapes[targetKey] || sampledShapes["test_assets/world.json"];
@@ -192,7 +248,7 @@ function applyVisualTarget(visual) {
 }
 
 // Atualização física das partículas
-function updatePhysics(dt, time, morphStrength = 1.0) {
+function updatePhysics(dt, time, morphStrength = 1.0, speedMultiplier = 1.0, turbulence = 0.05) {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
@@ -218,9 +274,9 @@ function updatePhysics(dt, time, morphStrength = 1.0) {
         const vtx = -vry;
         const vty = vrx;
 
-        const speed = 1.2 * p.z;
-        const ax = (vrx * (-0.1) + vtx * speed) * 0.05;
-        const ay = (vry * (-0.1) + vty * speed) * 0.05;
+        const speed = 1.2 * p.z * speedMultiplier;
+        const ax = (vrx * (-0.1) + vtx * speed) * turbulence;
+        const ay = (vry * (-0.1) + vty * speed) * turbulence;
 
         p.vx = (p.vx + ax) * 0.95;
         p.vy = (p.vy + ay) * 0.95;
@@ -254,20 +310,27 @@ function drawFrame(currentFrameIndex) {
     ctx.fillStyle = "#030305";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    ctx.save();
     // Linhas técnicas decorativas
-    ctx.strokeStyle = "rgba(0, 242, 255, 0.02)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(0, 242, 255, 0.15)"; // increased opacity
+    ctx.lineWidth = 2; // increased thickness
     ctx.beginPath();
-    for (let x = 100; x < canvas.width; x += 200) {
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
+
+    const timeSec = currentFrameIndex / targetFps;
+    const gridOffset = (timeSec * 20) % 200;
+
+    for (let x = 0; x < canvas.width + 200; x += 200) {
+        ctx.moveTo(x - gridOffset, 0);
+        ctx.lineTo(x - gridOffset, canvas.height);
     }
-    for (let y = 100; y < canvas.height; y += 200) {
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
+    for (let y = 0; y < canvas.height + 200; y += 200) {
+        ctx.moveTo(0, y - gridOffset);
+        ctx.lineTo(canvas.width, y - gridOffset);
     }
     ctx.stroke();
+    ctx.restore();
 
+    ctx.globalCompositeOperation = "screen";
     // Desenhar partículas
     for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
@@ -278,9 +341,9 @@ function drawFrame(currentFrameIndex) {
         
         // Glow cyan (#00f2ff) a azul escuro
         const r = 0;
-        const g = Math.round(150 + factor * 105);
+        const g = Math.round(200 + factor * 55);
         const b = 255;
-        const alpha = 0.2 + factor * 0.6;
+        const alpha = Math.max(0.1, 0.9 - factor * 0.5); // opacity varies
 
         ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -288,12 +351,15 @@ function drawFrame(currentFrameIndex) {
         // Desenhar rastro de cauda
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
-        for (let h = 0; h < 5; h++) {
+        const tailLength = Math.max(1, Math.floor(factor * 5));
+        for (let h = 0; h < tailLength; h++) {
             ctx.lineTo(p.history[h].x, p.history[h].y);
         }
-        ctx.lineWidth = p.z * 1.2;
+        ctx.lineWidth = p.z * 2.0 * (1.0 + factor); // line width varies with speed
         ctx.stroke();
     }
+
+    ctx.globalCompositeOperation = "source-over";
 
     // Telemetria HUD
     const currentTime = currentFrameIndex / targetFps;
@@ -320,12 +386,25 @@ function runSimulationToTime(timeSeconds) {
         const visual = visuals[visualIdx] || visuals[0];
         
         applyVisualTarget(visual);
-        updatePhysics(dt, t, visual.particles.morph_strength);
+        const morphStrength = visual.particles?.morph_strength !== undefined ? visual.particles.morph_strength : 1.0;
+        const speed = visual.particles?.speed !== undefined ? visual.particles.speed : 1.0;
+        const turbulence = visual.particles?.turbulence !== undefined ? visual.particles.turbulence : 0.05;
+        updatePhysics(dt, t, morphStrength, speed, turbulence);
     }
 }
 
 // Protocolo de Gravação HyperFrames
 let initialized = false;
+
+window.__appReady = false;
+
+window.initializeScene = async function() {
+    if (!initialized) {
+        await loadResources();
+        initialized = true;
+        window.__appReady = true;
+    }
+};
 
 window.__hf = {
     duration: duration,
@@ -333,6 +412,7 @@ window.__hf = {
         if (!initialized) {
             await loadResources();
             initialized = true;
+            window.__appReady = true;
         }
         runSimulationToTime(timeSeconds);
         const frameIndex = Math.min(
@@ -362,6 +442,7 @@ window.renderFrame = async (tMs) => {
 window.onload = async () => {
     await loadResources();
     initialized = true;
+    window.__appReady = true;
 
     const isHeadless = new URLSearchParams(window.location.search).get("headless") === "true";
     if (!isHeadless) {
@@ -383,7 +464,10 @@ window.onload = async () => {
             const visual = visuals[visualIdx] || visuals[0];
             
             applyVisualTarget(visual);
-            updatePhysics(1/targetFps, elapsed, visual.particles.morph_strength);
+            const morphStrength = visual.particles?.morph_strength !== undefined ? visual.particles.morph_strength : 1.0;
+            const speed = visual.particles?.speed !== undefined ? visual.particles.speed : 1.0;
+            const turbulence = visual.particles?.turbulence !== undefined ? visual.particles.turbulence : 0.05;
+            updatePhysics(1/targetFps, elapsed, morphStrength, speed, turbulence);
             
             const frameIndex = Math.floor(elapsed * targetFps);
             drawFrame(frameIndex);

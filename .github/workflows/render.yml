@@ -1,0 +1,60 @@
+name: Nexus Render
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'pipeline/sync_drive/audio_ready/**'
+      - 'conductor/**'
+      - 'web/**'
+      - 'tools/Engine-Headless-Recorder/**'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Install FFmpeg
+        run: sudo apt-get install -y -qq ffmpeg
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install -q uv
+
+      - name: Render scenes
+        run: |
+          mkdir -p pipeline/sync_drive/exports
+          find pipeline/sync_drive/audio_ready -name "*.wav" | while read wav; do
+            rel=$(echo "$wav" | sed 's|.*/audio_ready/||')
+            factory=$(echo "$rel" | cut -d/ -f1)
+            scene=$(echo "$rel" | cut -d/ -f2)
+            scene_id=$(basename "$wav" .wav)
+            echo "🎥 $factory / $scene_id"
+            uv run python conductor/render_headless.py "$factory" "$scene" || true
+          done
+
+      - name: Upload MP4s
+        uses: actions/upload-artifact@v4
+        with:
+          name: renders-ensaio
+          path: pipeline/sync_drive/exports/*.mp4
+          retention-days: 90

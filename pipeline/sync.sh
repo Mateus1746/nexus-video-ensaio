@@ -12,13 +12,15 @@ echo "=== Nexus Sync: Factory ($FACTORY_NAME) ==="
 case "$1" in
     up)
         echo "[🚀] Enviando staging para a nuvem..."
-        # Sincroniza apenas a pasta desta fábrica no staging
         rclone sync "$LOCAL_SYNC_DIR/staging/$FACTORY_NAME" "$REMOTE_NAME:$REMOTE_PATH/staging/$FACTORY_NAME" -P
+        echo "[🧬] Enviando DNA vocal customizado..."
+        rclone sync "$LOCAL_SYNC_DIR/custom_voices" "$REMOTE_NAME:$REMOTE_PATH/custom_voices" -P
         ;;
     down)
         echo "[🛸] Baixando ativos processados..."
-        # Sincroniza apenas a pasta desta fábrica no audio_ready
         rclone sync "$REMOTE_NAME:$REMOTE_PATH/audio_ready/$FACTORY_NAME" "$LOCAL_SYNC_DIR/audio_ready/$FACTORY_NAME" -P
+        echo "[🧬] Baixando DNA vocal customizado..."
+        rclone sync "$REMOTE_NAME:$REMOTE_PATH/custom_voices" "$LOCAL_SYNC_DIR/custom_voices" -P
         ;;
     *)
         echo "Uso: ./sync.sh [up|down]"
