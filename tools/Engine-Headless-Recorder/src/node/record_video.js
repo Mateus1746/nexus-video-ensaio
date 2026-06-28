@@ -352,8 +352,10 @@ async function record() {
         }
         await window.recorder.recordFrame(canvas, timeMs);
 
-        // Yield via setTimeout(0) para permitir que WebCodecs e GPU processem
-        await new Promise(resolve => setTimeout(resolve, 0));
+        // Yield via setTimeout(0) a cada 10 frames para aliviar a thread principal e permitir processamento concorrente da GPU/WebCodecs
+        if (i % 10 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
 
         // Imprime o progresso no console do browser (capturado por page.on('console'))
         if ((i + 1) % fps === 0) {
