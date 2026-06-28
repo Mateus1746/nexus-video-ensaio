@@ -295,12 +295,7 @@ async function record() {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-web-security',
-        '--font-render-hinting=none',
-        '--enable-gpu',
-        '--use-gl=angle',
-        '--use-angle=vulkan',
-        '--enable-features=Vulkan,UseOzonePlatform',
-        '--ozone-platform=headless'
+        '--font-render-hinting=none'
       ],
       defaultViewport: { width: 1080, height: 1080 }
     });
