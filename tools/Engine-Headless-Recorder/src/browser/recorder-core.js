@@ -76,7 +76,7 @@ class CoreRecorder {
       bitrate: this.bitrate,
       framerate: this.fps,
       latencyMode: 'quality',
-      hardwareAcceleration: 'prefer-hardware'
+      hardwareAcceleration: 'no-preference'
     };
 
     this.encoder = new VideoEncoder(init);
@@ -95,6 +95,11 @@ class CoreRecorder {
     if (this.status !== 'RECORDING') {
       console.warn('[CoreRecorder] Tentativa de gravar frame fora do estado de gravação.');
       return;
+    }
+
+    // Controle de congestionamento: se a fila do VideoEncoder estiver cheia, yielda para dar vazão ao worker
+    while (this.encoder && this.encoder.encodeQueueSize > 8) {
+      await new Promise(resolve => setTimeout(resolve, 1));
     }
 
     const timestampUs = timestampMs * 1000; // Converter milissegundos do renderizador para microssegundos
