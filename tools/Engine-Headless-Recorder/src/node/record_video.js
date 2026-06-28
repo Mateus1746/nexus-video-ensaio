@@ -286,6 +286,7 @@ async function record() {
     console.log(`[RECORDER] Config: ${DURATION_S}s | ${FPS} FPS | Bitrate: ${BITRATE} bps | Canvas: ${CANVAS_SELECTOR}`);
 
     // Iniciar Puppeteer
+    // Iniciar Puppeteer
     browser = await puppeteer.launch({
       headless: 'new',
       protocolTimeout: 0,
@@ -337,35 +338,31 @@ async function record() {
     }, FPS, BITRATE);
 
     console.log(`[RECORDER] Iniciando loop de gravação virtual síncrona: ${totalFrames} frames...`);
-    const renderStart = Date.now();
 
-    for (let i = 0; i < totalFrames; i++) {
-      const timeMs = i * frameIntervalMs;
-      
-      // 3. Atualizar frame e gravar usando o buffer do Canvas
-      await page.evaluate(async (t, canvasSelector) => {
-        // Avança a simulação física/gráfica para o tempo t se implementado
-        if (typeof window.renderFrame === 'function') {
-          window.renderFrame(t);
-        } else if (t === 0) {
-          console.warn('[RECORDER BROWSER] Alerta: window.renderFrame não está definido. A gravação prosseguirá capturando o estado do canvas.');
-        }
-        // Codifica os pixels gráficos no encoder (usa seletor ou fallback de canvas genérico)
-        const canvas = document.querySelector(canvasSelector) || document.querySelector('canvas');
-        if (!canvas) {
-          throw new Error(`[RECORDER BROWSER] Canvas não encontrado com o seletor: ${canvasSelector}`);
-        }
-        await window.recorder.recordFrame(canvas, t);
-      }, timeMs, CANVAS_SELECTOR);
-
-      // Logs de progresso
-      if ((i + 1) % FPS === 0) {
-        const secRecorded = (i + 1) / FPS;
-        const elapsedSec = (Date.now() - renderStart) / 1000;
-        const renderFps = (i + 1) / elapsedSec;
-        console.log(`[RECORDER] Progresso: ${secRecorded}/${DURATION_S}s (${i + 1}/${totalFrames} frames) | Velocidade virtual: ${renderFps.toFixed(1)} FPS`);
+    // Executar todo o loop de gravação de frames no contexto do navegador de uma só vez para eliminar latência de WebSocket IPC
+    await page.evaluate(async (totFrames, intervalMs, canvasSelector, fps, totalDur) => {
+      const canvas = document.querySelector(canvasSelector) || document.querySelector('canvas');
+      if (!canvas) {
+        throw new Error(`[RECORDER BROWSER] Canvas não encontrado com o seletor: ${canvasSelector}`);
       }
-    }
+
+      const loopStart = Date.now();
+      for (let i = 0; i < totFrames; i++) {
+        const timeMs = i * intervalMs;
+        if (typeof window.renderFrame === 'function') {
+          await window.renderFrame(timeMs);
+        }
+        await window.recorder.recordFrame(canvas, timeMs);
+
+        // Imprime o progresso no console do browser (capturado por page.on('console'))
+        if ((i + 1) % fps === 0) {
+          const secRecorded = (i + 1) / fps;
+          const elapsedSec = (Date.now() - loopStart) / 1000;
+          const renderFps = (i + 1) / elapsedSec;
+          console.log(`[RECORDER] Progresso: ${secRecorded}/${totalDur}s (${i + 1}/${totFrames} frames) | Velocidade virtual: ${renderFps.toFixed(1)} FPS`);
+        }
+      }
+    }, totalFrames, frameIntervalMs, CANVAS_SELECTOR, FPS, DURATION_S);
 
     // 4. Parar a gravação no browser (fecha o codificador e o OPFS)
     console.log(`[RECORDER] Finalizando streams e fechando arquivo fMP4...`);
