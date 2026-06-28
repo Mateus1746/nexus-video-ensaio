@@ -2,75 +2,113 @@
   {
     "id": "cold_war_full",
     "audio_file": "/home/mateus/.gemini/projetos/nexus_media/video/ensaio/pipeline/sync_drive/audio_ready/ensaio/full_documentary/script/script.wav",
-    "duration": 571.79,
+    "duration": 736.715,
     "sub_shot_timings": [
-      9.66,
-      11.58,
-      15.96,
-      15.96,
-      15.96,
-      15.96,
-      15.96,
-      30.96,
-      49.6,
-      64.6,
-      65.49,
-      67.21,
-      67.53,
-      82.53,
-      93.54,
-      99.05,
-      104.18,
-      112.16,
-      117.93,
-      120.05,
-      127.73,
-      135.24,
-      145.79,
-      153.61,
-      168.61,
-      174.46,
-      182.32,
-      189.28,
-      193.39,
-      193.49,
-      195.77,
-      198.19,
-      213.19,
-      229.54,
-      237.55,
-      246.13,
-      261.13,
-      338.17,
-      338.27,
-      338.27,
-      338.27,
-      338.27,
-      353.27,
-      369.44,
-      373.62,
-      374.33,
-      389.33,
-      395.36,
-      410.36,
-      418.13,
-      433.13,
-      436.02,
-      436.02,
-      436.02,
-      437.62,
-      452.62,
-      474.47,
-      474.47,
-      474.47,
-      489.47,
-      514.04,
-      525.38,
-      540.38,
-      540.95,
-      555.3,
-      555.3,
-      556.71
+      8.18,
+      10.1,
+      13.88,
+      13.88,
+      13.88,
+      13.88,
+      13.88,
+      28.88,
+      44.74,
+      57.77,
+      57.77,
+      57.77,
+      57.77,
+      72.77,
+      87.58,
+      91.12,
+      97.99,
+      97.99,
+      97.99,
+      97.99,
+      97.99,
+      97.99,
+      97.99,
+      97.99,
+      112.99,
+      159.97,
+      166.29,
+      166.29,
+      166.29,
+      166.29,
+      166.29,
+      181.29,
+      197.05,
+      210.32,
+      218.7,
+      227.85,
+      227.85,
+      227.85,
+      242.85,
+      245.04,
+      245.04,
+      245.04,
+      260.04,
+      263.86,
+      266.64,
+      273.41,
+      273.41,
+      288.41,
+      292.97,
+      297.26,
+      300.22,
+      300.22,
+      300.22,
+      300.22,
+      300.22,
+      300.22,
+      300.22,
+      300.22,
+      315.22,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      348.19,
+      363.19,
+      475.2,
+      478.44,
+      486.5,
+      486.5,
+      491.92,
+      506.92,
+      509.15,
+      509.15,
+      509.15,
+      509.15,
+      509.15,
+      509.15,
+      524.15,
+      592.95,
+      592.95,
+      607.95,
+      613.44,
+      618.46,
+      620.06,
+      620.06,
+      620.06,
+      635.06,
+      645.84,
+      660.84,
+      669.25,
+      669.25,
+      669.25,
+      669.25,
+      669.25,
+      669.25
     ],
     "visuals": [
       {
@@ -169,15 +207,6 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
           "target_icon": "assets/icon_gear.png"
         }
       },
@@ -205,7 +234,7 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
+          "target_icon": "assets/icon_wheat.png"
         }
       },
       {
@@ -214,7 +243,7 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_icon": "assets/icon_wheat.png"
+          "target_map": "test_assets/world.json"
         }
       },
       {
@@ -412,15 +441,6 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
           "target_icon": "assets/icon_computer.png"
         }
       },
@@ -440,6 +460,24 @@
           "turbulence": 0.3,
           "morph_strength": 1.0,
           "target_icon": "assets/icon_key_intel.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_map": "test_assets/world.json"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_jet_plane.png"
         }
       },
       {
@@ -502,15 +540,6 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
           "target_icon": "assets/icon_gear.png"
         }
       },
@@ -529,6 +558,15 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
+          "target_text": "Phase 2: The Energy Pivot"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
           "target_icon": "assets/icon_barrel.png"
         }
       },
@@ -538,7 +576,7 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
+          "target_icon": "assets/icon_barrel.png"
         }
       },
       {
@@ -566,15 +604,6 @@
           "turbulence": 0.3,
           "morph_strength": 1.0,
           "target_icon": "assets/icon_barrel.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 15000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_map": "test_assets/world.json"
         }
       },
       {
@@ -628,6 +657,15 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
+          "target_icon": "assets/icon_barrel.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
           "target_icon": "assets/icon_bread_line.png"
         }
       },
@@ -637,7 +675,313 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
+          "target_icon": "assets/icon_submarine.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_wheat.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
           "target_text": "Phase 3: Final Calculation"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_atom.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_biohazard.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_handshake.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_map": "test_assets/world.json"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_star.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_jet_plane.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_computer.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_berlin_wall.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_berlin_wall.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_wheat.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_map": "test_assets/world.json"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_dollar_sign.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_text": "Conclusion: The Modern Echo"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_atom.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_gear.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_biohazard.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_map": "test_assets/world.json"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_handshake.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_gear.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_map": "test_assets/world.json"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_map": "test_assets/world.json"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_submarine.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_handshake.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_map": "test_assets/world.json"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_gear.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_satellite.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_map": "test_assets/world.json"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_satellite.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_key_intel.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_gear.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_star.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_computer.png"
         }
       },
       {
@@ -664,7 +1008,7 @@
           "speed": 0.8,
           "turbulence": 0.3,
           "morph_strength": 1.0,
-          "target_icon": "assets/icon_dollar_sign.png"
+          "target_map": "test_assets/world.json"
         }
       },
       {
@@ -674,6 +1018,42 @@
           "turbulence": 0.3,
           "morph_strength": 1.0,
           "target_icon": "assets/icon_gear.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_barrel.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_jet_plane.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_computer.png"
+        }
+      },
+      {
+        "particles": {
+          "density": 15000,
+          "speed": 0.8,
+          "turbulence": 0.3,
+          "morph_strength": 1.0,
+          "target_icon": "assets/icon_star.png"
         }
       },
       {
