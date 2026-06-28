@@ -355,7 +355,9 @@ async function record() {
         await window.recorder.recordFrame(canvas, timeMs);
 
         // Evita travar a thread principal do Chrome (permite GC, WebCodecs e GPU agirem)
-        await new Promise(resolve => setTimeout(resolve, 0));
+        if (i % 50 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
 
         // Imprime o progresso no console do browser (capturado por page.on('console'))
         if ((i + 1) % fps === 0) {
