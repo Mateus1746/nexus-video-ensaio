@@ -357,7 +357,7 @@ async function record() {
         '--use-gl=angle',
         '--use-angle=gl'
       ],
-      defaultViewport: { width: 1080, height: 1080 }
+      defaultViewport: { width: CAPTURE_WIDTH, height: CAPTURE_HEIGHT }
     });
 
     const page = await browser.newPage();
@@ -385,16 +385,16 @@ async function record() {
 
     // 2. Inicializar o gravador no contexto do browser
     console.log(`[RECORDER] Inicializando o CoreRecorder e abrindo fluxo fMP4 no OPFS...`);
-    await page.evaluate(async (fpsCount, bitrateValue) => {
+    await page.evaluate(async (fpsCount, bitrateValue, capWidth, capHeight) => {
       window.recorder = new window.CoreRecorder({
         fps: fpsCount,
-        width: 1080,
-        height: 1080,
+        width: capWidth,
+        height: capHeight,
         bitrate: bitrateValue
       });
       await window.recorder.initialize();
       window.recorder.start();
-    }, FPS, BITRATE);
+    }, FPS, BITRATE, CAPTURE_WIDTH, CAPTURE_HEIGHT);
 
     console.log(`[RECORDER] Iniciando loop de gravação virtual síncrona: ${totalFrames} frames...`);
 
