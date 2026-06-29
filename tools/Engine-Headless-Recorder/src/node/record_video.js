@@ -434,29 +434,48 @@ async function record() {
       await window.recorder.stop();
     });
 
-    // 5. Transferir o arquivo MP4 resultante do OPFS do browser para o disco local
-    console.log(`[RECORDER] Baixando arquivo gerado do OPFS...`);
-    const base64Mp4 = await page.evaluate(async () => {
+    // 5. Expor métodos para download em chunks para evitar estouro de limite de string do V8 (RangeError: Invalid string length)
+    const writeStream = fs.createWriteStream(OUTPUT_FILE_PATH);
+    await page.exposeFunction('writeChunk', (base64Chunk) => {
+      const buffer = Buffer.from(base64Chunk, 'base64');
+      writeStream.write(buffer);
+    });
+
+    const streamClosePromise = new Promise((resolve) => {
+      writeStream.on('finish', resolve);
+    });
+
+    await page.exposeFunction('closeStream', () => {
+      writeStream.end();
+    });
+
+    // 6. Ler o arquivo do OPFS em blocos e enviar ao Node.js
+    await page.evaluate(async () => {
       const root = await navigator.storage.getDirectory();
       const fileHandle = await root.getFileHandle("output_fragmented.mp4");
       const file = await fileHandle.getFile();
-      console.log(`[OPFS] Tamanho do arquivo lido no navegador principal: ${file.size} bytes`);
-      const arrayBuffer = await file.arrayBuffer();
-
-      // Converte ArrayBuffer em Base64 usando blocos rápidos
-      let binary = '';
-      const bytes = new Uint8Array(arrayBuffer);
-      const len = bytes.byteLength;
-      const chunkSize = 65536;
-      for (let i = 0; i < len; i += chunkSize) {
-        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+      console.log(`[OPFS] Transferindo arquivo de ${file.size} bytes para o host em chunks de 8MB...`);
+      
+      const size = file.size;
+      const chunkSize = 8 * 1024 * 1024; // chunks de 8MB
+      
+      for (let offset = 0; offset < size; offset += chunkSize) {
+        const slice = file.slice(offset, offset + chunkSize);
+        const arrayBuffer = await slice.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        
+        let binary = '';
+        const subChunkSize = 65536;
+        for (let i = 0; i < bytes.length; i += subChunkSize) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + subChunkSize));
+        }
+        const base64 = btoa(binary);
+        await window.writeChunk(base64);
       }
-      return btoa(binary);
+      await window.closeStream();
     });
 
-    // 6. Escrever o arquivo MP4 localmente
-    const videoBuffer = Buffer.from(base64Mp4, 'base64');
-    fs.writeFileSync(OUTPUT_FILE_PATH, videoBuffer);
+    await streamClosePromise;
     console.log(`[RECORDER] Arquivo de vídeo gravado com sucesso em: ${OUTPUT_FILE_PATH}`);
 
   } finally {
