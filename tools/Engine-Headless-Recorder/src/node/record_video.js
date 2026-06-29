@@ -42,8 +42,8 @@ const BITRATE = args.bitrate || 6000000;
 // --mode=cpu  → usa FFmpeg + page.screenshot() com workers paralelos (padrão Jules VM)
 // --mode=gpu  → usa WebCodecs (pipeline original, requer GPU)
 // CPU_RENDER=1 (env var) → força modo CPU
-const RENDER_MODE = args.mode || (process.env.CPU_RENDER === '1' ? 'cpu' : 'cpu');
-const CPU_WORKERS = Math.max(1, Math.min(os.cpus().length, 4)); // até 4 workers
+const RENDER_MODE = args.mode || (process.env.CPU_RENDER === '1' ? 'cpu' : 'gpu');
+const CPU_WORKERS = Math.max(1, os.cpus().length); // Usa todos os cores disponíveis para máxima performance paralela
 const CAPTURE_WIDTH  = Math.round((args.width  || 1280));
 const CAPTURE_HEIGHT = Math.round((args.height || 720));
 // ─────────────────────────────────────────────────────────────────────────────
@@ -162,15 +162,52 @@ async function renderChunk(browser, projectUrl, canvasSelector, frameIndices, fr
 }
 
 async function renderAllFrames(browser, projectUrl, canvasSelector, totalFrames, frameIntervalMs, captureWidth, captureHeight) {
-  const CHUNK_SIZE = 100; // 100 frames (~4s) — Chrome RSS stays at 63MB (testado), elimina overhead de contexto
+  const CHUNK_SIZE = 100; // 100 frames (~4s)
   const results = [];
+  
+  // Criar todos os chunks
+  const chunks = [];
   for (let start = 0; start < totalFrames; start += CHUNK_SIZE) {
     const end = Math.min(start + CHUNK_SIZE, totalFrames);
     const indices = Array.from({ length: end - start }, (_, i) => start + i);
-    console.log(`[RENDER] Chunk ${start}-${end-1} (${indices.length} frames)`);
-    const chunkFrames = await renderChunk(browser, projectUrl, canvasSelector, indices, frameIntervalMs, captureWidth, captureHeight);
-    results.push(chunkFrames);
+    chunks.push({ start, end, indices });
   }
+
+  console.log(`[RENDER] Total de ${chunks.length} chunks para processar em ${CPU_WORKERS} workers.`);
+
+  // Pool de workers concorrentes
+  const resultsMap = new Map();
+  let chunkIdx = 0;
+
+  async function runWorker(workerId) {
+    while (true) {
+      // Obter o próximo chunk thread-safe
+      const currentIdx = chunkIdx++;
+      if (currentIdx >= chunks.length) break;
+      
+      const chunk = chunks[currentIdx];
+      console.log(`[RENDER Worker ${workerId}] Iniciando Chunk ${chunk.start}-${chunk.end-1} (${chunk.indices.length} frames)`);
+      
+      const chunkFrames = await renderChunk(browser, projectUrl, canvasSelector, chunk.indices, frameIntervalMs, captureWidth, captureHeight);
+      resultsMap.set(currentIdx, chunkFrames);
+      
+      console.log(`[RENDER Worker ${workerId}] Concluído Chunk ${chunk.start}-${chunk.end-1}`);
+    }
+  }
+
+  // Inicializa todos os workers em paralelo
+  const promises = [];
+  for (let i = 0; i < CPU_WORKERS; i++) {
+    promises.push(runWorker(i + 1));
+  }
+
+  await Promise.all(promises);
+
+  // Remontar resultados na ordem correta
+  for (let i = 0; i < chunks.length; i++) {
+    results.push(resultsMap.get(i));
+  }
+
   return results.flat().sort((a, b) => a.frameIndex - b.frameIndex);
 }
 
