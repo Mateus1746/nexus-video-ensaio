@@ -81,7 +81,13 @@ function serveFile(res, filePath) {
 // 1. Iniciar servidor HTTP estático local para evitar restrições CORS com o OPFS e Web Workers
 function startLocalServer() {
   const server = http.createServer((req, res) => {
-    const urlPath = decodeURIComponent(req.url.split('?')[0]);
+    let urlPath = decodeURIComponent(req.url.split('?')[0]);
+    
+    // Suporte dinâmico para caminhos acoplados no repositório principal (sem prefixo tools/)
+    if (urlPath.startsWith('/Engine-Headless-Recorder/') && !fs.existsSync(path.join(PROJECTS_BASE_DIR, urlPath))) {
+      urlPath = '/tools' + urlPath;
+    }
+    
     const filePath = path.join(PROJECTS_BASE_DIR, urlPath);
 
     if (!filePath.startsWith(PROJECTS_BASE_DIR)) {
