@@ -217,15 +217,38 @@ function applyVisualTarget(visual) {
     hudTarget.innerText = targetKey.split("/").pop();
 }
 
-// Simplex noise approximation for curl/flow
+// Tabela de Busca (LUT) de alto desempenho para funções trigonométricas sines/cosines
+const LUT_SIZE = 8192;
+const LUT_MASK = LUT_SIZE - 1;
+const sinTable = new Float32Array(LUT_SIZE);
+const cosTable = new Float32Array(LUT_SIZE);
+const RAD_TO_INDEX = LUT_SIZE / (Math.PI * 2);
+
+for (let i = 0; i < LUT_SIZE; i++) {
+    const angle = (i / LUT_SIZE) * Math.PI * 2;
+    sinTable[i] = Math.sin(angle);
+    cosTable[i] = Math.cos(angle);
+}
+
+function fastSin(rad) {
+    let idx = (rad * RAD_TO_INDEX) | 0;
+    return sinTable[idx & LUT_MASK];
+}
+
+function fastCos(rad) {
+    let idx = (rad * RAD_TO_INDEX) | 0;
+    return cosTable[idx & LUT_MASK];
+}
+
+// Simplex noise approximation for curl/flow using LUT trig functions
 function curlNoise(x, y, time) {
     const scale = 0.005;
-    const n1 = Math.sin(x * scale + time) * Math.cos(y * scale - time);
-    const n2 = Math.cos(x * scale - time) * Math.sin(y * scale + time);
+    const n1 = fastSin(x * scale + time) * fastCos(y * scale - time);
+    const n2 = fastCos(x * scale - time) * fastSin(y * scale + time);
     return { cx: n1, cy: n2 };
 }
 
-// Atualização física das partículas
+// Atualização física das partículas com LUTs
 function updatePhysics(dt, time, morphStrength = 1.0) {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
@@ -253,15 +276,14 @@ function updatePhysics(dt, time, morphStrength = 1.0) {
         p.vx += flowForceX * dt * 60.0;
         p.vy += flowForceY * dt * 60.0;
 
-        // Vibração browniana (jitter)
+        // Vibração browniana (jitter) com fastSin/fastCos
         const vibSeed = time * 5.0 + p.noiseOffset;
-        p.vx += Math.sin(vibSeed * 1.2) * 0.15 * p.z;
-        p.vy += Math.cos(vibSeed * 0.9) * 0.15 * p.z;
+        p.vx += fastSin(vibSeed * 1.2) * 0.15 * p.z;
+        p.vy += fastCos(vibSeed * 0.9) * 0.15 * p.z;
 
         // Atração magnética de Morph (com elástico interativo)
         const toTargetX = p.tx - p.x;
         const toTargetY = p.ty - p.y;
-        const distTarget = Math.sqrt(toTargetX*toTargetX + toTargetY*toTargetY) || 0.1;
         
         // Atração baseada na distância (efeito mola)
         const springForce = 0.02 * morphStrength;
@@ -354,8 +376,10 @@ function drawFrame(currentFrameIndex) {
     for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // Bloom de cor baseado na velocidade e cor única
-        const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+        // Algoritmo Alpha-Max Beta-Min para aproximação rápida de distância (sem Math.sqrt)
+        const absVx = p.vx < 0 ? -p.vx : p.vx;
+        const absVy = p.vy < 0 ? -p.vy : p.vy;
+        const speed = absVx > absVy ? absVx + 0.4 * absVy : absVy + 0.4 * absVx;
         const factor = Math.min(1.0, Math.max(0.0, speed * 0.05));
         
         // Ciclo de cor sutil (Cyan para Azul Elétrico para Branco)
@@ -372,12 +396,14 @@ function drawFrame(currentFrameIndex) {
             r = 150; g = 255; b = 255;
         }
 
-        // Fading dinâmico baseado no ciclo de vida e velocidade
-        const lifeFade = Math.sin(p.life * Math.PI); // fade in/out suave
+        // Fading dinâmico baseado no ciclo de vida e velocidade usando LUT fastSin
+        const lifeFade = fastSin(p.life * Math.PI);
         const alpha = Math.min(1.0, (0.3 + factor * 0.7) * lifeFade);
 
-        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        // String única de estilo para evitar duplicação de concatenação de strings
+        const styleStr = `rgba(${r},${g},${b},${alpha.toFixed(2)})`;
+        ctx.strokeStyle = styleStr;
+        ctx.fillStyle = styleStr;
 
         // Desenhar rastro de cauda dinâmico (mais longo se rápido)
         const trailLength = Math.min(p.history.length, Math.max(2, Math.floor(speed * 0.8)));
@@ -461,6 +487,8 @@ window.initializeScene = async function() {
     }
 };
 
+let lastSimulatedTime = -1;
+
 window.__hf = {
     duration: duration,
     seek: async (timeSeconds) => {
@@ -468,8 +496,36 @@ window.__hf = {
             await loadResources();
             initialized = true;
             window.__appReady = true;
+            lastSimulatedTime = -1;
         }
-        runSimulationToTime(timeSeconds);
+        
+        const dt = 1 / targetFps;
+        const currentStep = Math.floor(timeSeconds * targetFps);
+        const lastStep = lastSimulatedTime >= 0 ? Math.floor(lastSimulatedTime * targetFps) : -1;
+
+        if (lastStep >= 0 && currentStep > lastStep) {
+            // Avança a simulação sequencialmente a partir do último estado, independentemente do FPS de gravação
+            for (let step = lastStep; step < currentStep; step++) {
+                const t = step * dt;
+                let visualIdx = 0;
+                for (let i = 0; i < timelines.length; i++) {
+                    if (t >= timelines[i]) {
+                        visualIdx = i + 1;
+                    }
+                }
+                const visual = visuals[visualIdx] || visuals[0];
+                applyVisualTarget(visual);
+                updatePhysics(dt, t, visual.particles.morph_strength);
+            }
+            lastSimulatedTime = timeSeconds;
+        } else if (timeSeconds === 0) {
+            initSimulation();
+            lastSimulatedTime = 0;
+        } else {
+            runSimulationToTime(timeSeconds);
+            lastSimulatedTime = timeSeconds;
+        }
+        
         const frameIndex = Math.min(
             Math.floor(timeSeconds * targetFps),
             Math.floor(duration * targetFps) - 1
@@ -485,7 +541,6 @@ window.__hf = {
         applyVisualTarget(visuals[visualIdx] || visuals[0]);
 
         drawFrame(frameIndex);
-        await new Promise(resolve => requestAnimationFrame(resolve));
     }
 };
 
