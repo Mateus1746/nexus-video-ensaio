@@ -43,7 +43,7 @@ const BITRATE = args.bitrate || 6000000;
 // --mode=gpu  → usa WebCodecs (pipeline original, requer GPU)
 // CPU_RENDER=1 (env var) → força modo CPU
 const RENDER_MODE = args.mode || (process.env.CPU_RENDER === '1' ? 'cpu' : 'gpu');
-const CPU_WORKERS = Math.max(1, os.cpus().length); // Usa todos os cores disponíveis para máxima performance paralela
+const CPU_WORKERS = Math.max(1, Math.min(os.cpus().length, 3)); // Limitado a 3 workers para evitar deadlocks de SwiftShader
 const CAPTURE_WIDTH  = Math.round((args.width  || 1280));
 const CAPTURE_HEIGHT = Math.round((args.height || 720));
 // ─────────────────────────────────────────────────────────────────────────────
@@ -140,6 +140,9 @@ async function renderChunk(browser, projectUrl, canvasSelector, frameIndices, fr
       await new Promise(r => setTimeout(r, 50));
     }
   });
+
+  // Garantir que todos os recursos da aplicação (JSON, GeoJSON, ícones) estão carregados antes de renderizar
+  await page.waitForFunction(() => window.__appReady === true, { timeout: 30000 });
 
   const frames = [];
   for (const frameIndex of frameIndices) {
