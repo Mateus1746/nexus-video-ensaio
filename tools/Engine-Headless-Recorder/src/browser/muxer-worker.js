@@ -73,7 +73,7 @@ self.onmessage = async (e) => {
       
       const dataPtr = wasmMuxerModule.getValue(retPtr, 'i32');
       const size = wasmMuxerModule.getValue(retPtr + 4, 'i32');
-      console.log(`[MuxerWorker Debug INIT] retPtr: ${retPtr}, dataPtr: ${dataPtr}, size: ${size}`);
+      // console.log(`[MuxerWorker Debug INIT] retPtr: ${retPtr}, dataPtr: ${dataPtr}, size: ${size}`);
       
       // Cria uma cópia nativa independente (slice) fora da heap do WASM para evitar erros do OPFS
       const outputBuffer = new Uint8Array(HEAPU8.buffer, dataPtr, size).slice(0);
@@ -134,7 +134,7 @@ self.onmessage = async (e) => {
       // Lê o resultado estruturado retornado pelo C++ (MuxResult: { data: ptr, size: uint32 })
       const dataPtr = wasmMuxerModule.getValue(retPtr, 'i32');
       const size = wasmMuxerModule.getValue(retPtr + 4, 'i32');
-      console.log(`[MuxerWorker Debug CHUNK] retPtr: ${retPtr}, dataPtr: ${dataPtr}, size: ${size}`);
+      // console.log(`[MuxerWorker Debug CHUNK] retPtr: ${retPtr}, dataPtr: ${dataPtr}, size: ${size}`);
       
       // Cria uma cópia nativa independente (slice) fora da heap do WASM para evitar erros do OPFS
       const outputBuffer = new Uint8Array(HEAPU8.buffer, dataPtr, size).slice(0);
