@@ -43,7 +43,7 @@ const BITRATE = args.bitrate || 6000000;
 // --mode=gpu  → usa WebCodecs (pipeline original, requer GPU)
 // CPU_RENDER=1 (env var) → força modo CPU
 const RENDER_MODE = args.mode || (process.env.CPU_RENDER === '1' ? 'cpu' : 'gpu');
-const CPU_WORKERS = Math.max(1, Math.min(os.cpus().length, 3)); // Limitado a 3 workers para evitar deadlocks de SwiftShader
+const CPU_WORKERS = Math.max(1, Math.min(os.cpus().length, 5)); // Limitado a 5 workers agora que o Canvas 2D está 99% mais leve
 const CAPTURE_WIDTH  = Math.round((args.width  || 1280));
 const CAPTURE_HEIGHT = Math.round((args.height || 720));
 // ─────────────────────────────────────────────────────────────────────────────
