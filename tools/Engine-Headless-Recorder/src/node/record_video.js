@@ -43,7 +43,7 @@ const BITRATE = args.bitrate || 6000000;
 // --mode=gpu  → usa WebCodecs (pipeline original, requer GPU)
 // CPU_RENDER=1 (env var) → força modo CPU
 const RENDER_MODE = args.mode || (process.env.CPU_RENDER === '1' ? 'cpu' : 'cpu');
-const CPU_WORKERS = Math.max(1, Math.min(os.cpus().length, 4)); // até 4 workers
+const CPU_WORKERS = Math.max(1, Math.min(os.cpus().length, 5)); // até 5 workers
 const CAPTURE_WIDTH  = Math.round((args.width  || 1280));
 const CAPTURE_HEIGHT = Math.round((args.height || 720));
 // ─────────────────────────────────────────────────────────────────────────────
@@ -268,20 +268,42 @@ async function record() {
     console.log(`[RECORDER] Destino do arquivo local: ${OUTPUT_FILE_PATH}`);
     console.log(`[RECORDER] Config: ${DURATION_S}s | ${FPS} FPS | Bitrate: ${BITRATE} bps | Canvas: ${CANVAS_SELECTOR}`);
 
+    // GPU AUTO-DETECT com PRIME Offload
+    let hasNvidia = false;
+    try {
+      execSync('nvidia-smi', { stdio: 'ignore' });
+      hasNvidia = true;
+    } catch (e) {
+      hasNvidia = false;
+    }
+
+    const launchArgs = [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--ignore-gpu-blocklist',
+      '--disable-gpu-sandbox',
+      '--enable-gpu-rasterization',
+      '--enable-oop-rasterization',
+      '--use-gl=angle',
+      '--disable-web-security',
+      '--font-render-hinting=none',
+      hasNvidia ? '--use-angle=gl' : '--use-angle=swiftshader'
+    ];
+
+    const launchEnv = { ...process.env };
+    if (hasNvidia) {
+      launchEnv.__NV_PRIME_RENDER_OFFLOAD = '1';
+      launchEnv.__GLX_VENDOR_LIBRARY_NAME = 'nvidia';
+    }
+
     // Iniciar Puppeteer
     browser = await puppeteer.launch({
       headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--use-gl=swiftshader',
-        '--ignore-gpu-blacklist',
-        '--disable-web-security',
-        '--font-render-hinting=none'
-      ],
-      defaultViewport: { width: 1080, height: 1080 }
+      args: launchArgs,
+      env: launchEnv,
+      defaultViewport: { width: 1280, height: 720 },
+      protocolTimeout: 0
     });
 
     const page = await browser.newPage();
@@ -290,10 +312,30 @@ async function record() {
     page.on('console', msg => console.log(`[BROWSER LOG] ${msg.text()}`));
     page.on('pageerror', err => console.error(`[BROWSER ERROR] ${err.toString()}`));
 
+    // Log Renderer
+    await page.goto('about:blank');
+    const rendererInfo = await page.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (!gl) return 'WebGL not supported';
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      return debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown Renderer';
+    });
+    if (rendererInfo.includes('SwiftShader')) {
+      console.log(`[GPU] Fallback: SwiftShader`);
+    } else {
+      console.log(`[GPU] Renderer: ${rendererInfo}`);
+    }
+
     // Abrir a fábrica web correspondente usando o servidor local
     const projectUrl = `http://127.0.0.1:${PORT}/${PROJECT_NAME}/index.html?headless=true`;
     console.log(`[RECORDER] Navegando para ${projectUrl}`);
-    await page.goto(projectUrl, { waitUntil: 'networkidle0' });
+    try {
+      await page.goto(projectUrl, { waitUntil: 'networkidle0', timeout: 120000 });
+    } catch (err) {
+      console.error(`[ERROR] Timeout waiting for page navigation`);
+      throw err;
+    }
 
     console.log(`[RECORDER] Aguardando fontes estarem prontas...`);
     await page.evaluate(() => document.fonts.ready);
@@ -305,16 +347,16 @@ async function record() {
 
     // 2. Inicializar o gravador no contexto do browser
     console.log(`[RECORDER] Inicializando o CoreRecorder e abrindo fluxo fMP4 no OPFS...`);
-    await page.evaluate(async (fpsCount, bitrateValue) => {
+    await page.evaluate(async (fpsCount, bitrateValue, width, height) => {
       window.recorder = new window.CoreRecorder({
         fps: fpsCount,
-        width: 1080,
-        height: 1080,
+        width: width,
+        height: height,
         bitrate: bitrateValue
       });
       await window.recorder.initialize();
       window.recorder.start();
-    }, FPS, BITRATE);
+    }, FPS, BITRATE, CAPTURE_WIDTH, CAPTURE_HEIGHT);
 
     console.log(`[RECORDER] Iniciando loop de gravação virtual síncrona: ${totalFrames} frames...`);
     const renderStart = Date.now();
@@ -333,10 +375,16 @@ async function record() {
         // Codifica os pixels gráficos no encoder (usa seletor ou fallback de canvas genérico)
         const canvas = document.querySelector(canvasSelector) || document.querySelector('canvas');
         if (!canvas) {
+          console.error(`[ERROR] Canvas '${canvasSelector}' not found`);
           throw new Error(`[RECORDER BROWSER] Canvas não encontrado com o seletor: ${canvasSelector}`);
         }
         await window.recorder.recordFrame(canvas, t);
-      }, timeMs, CANVAS_SELECTOR);
+      }, timeMs, CANVAS_SELECTOR).catch(err => {
+        if (err.message.includes('Canvas')) {
+          process.exit(1);
+        }
+        throw err;
+      });
 
       // Logs de progresso
       if ((i + 1) % FPS === 0) {
@@ -355,27 +403,37 @@ async function record() {
 
     // 5. Transferir o arquivo MP4 resultante do OPFS do browser para o disco local
     console.log(`[RECORDER] Baixando arquivo gerado do OPFS...`);
-    const base64Mp4 = await page.evaluate(async () => {
-      const root = await navigator.storage.getDirectory();
-      const fileHandle = await root.getFileHandle("output_fragmented.mp4");
-      const file = await fileHandle.getFile();
-      console.log(`[OPFS] Tamanho do arquivo lido no navegador principal: ${file.size} bytes`);
-      const arrayBuffer = await file.arrayBuffer();
+    const writeStream = fs.createWriteStream(OUTPUT_FILE_PATH);
+    await page.exposeFunction('writeChunk', (b64) => writeStream.write(Buffer.from(b64, 'base64')));
+    await page.exposeFunction('closeStream', () => writeStream.end());
+    const done = new Promise(r => writeStream.on('finish', r));
 
-      // Converte ArrayBuffer em Base64 usando blocos rápidos
-      let binary = '';
-      const bytes = new Uint8Array(arrayBuffer);
-      const len = bytes.byteLength;
-      const chunkSize = 65536;
-      for (let i = 0; i < len; i += chunkSize) {
-        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    await page.evaluate(async () => {
+      try {
+        const root = await navigator.storage.getDirectory();
+        let fileHandle;
+        try {
+          fileHandle = await root.getFileHandle("output_fragmented.mp4");
+        } catch (err) {
+          console.error('[ERROR] OPFS file not found');
+          return;
+        }
+        const file = await fileHandle.getFile();
+        console.log(`[OPFS] Tamanho do arquivo lido no navegador principal: ${file.size} bytes`);
+        const CHUNK = 8 * 1024 * 1024;
+        for (let off = 0; off < file.size; off += CHUNK) {
+          const buf = new Uint8Array(await file.slice(off, off + CHUNK).arrayBuffer());
+          let bin = '';
+          for (let i = 0; i < buf.length; i += 65536)
+            bin += String.fromCharCode(...buf.subarray(i, i + 65536));
+          await window.writeChunk(btoa(bin));
+        }
+      } finally {
+        await window.closeStream();
       }
-      return btoa(binary);
     });
 
-    // 6. Escrever o arquivo MP4 localmente
-    const videoBuffer = Buffer.from(base64Mp4, 'base64');
-    fs.writeFileSync(OUTPUT_FILE_PATH, videoBuffer);
+    await done;
     console.log(`[RECORDER] Arquivo de vídeo gravado com sucesso em: ${OUTPUT_FILE_PATH}`);
 
   } finally {

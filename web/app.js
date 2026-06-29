@@ -2,6 +2,8 @@
 // SOVEREIGN ENSAY - PARTICLE TRANSITION FRONTEND ENGINE (SOTA 2026)
 // ============================================================
 
+const isHeadless = new URLSearchParams(window.location.search).get('headless') === 'true';
+
 const numParticles = 2000;
 const targetFps = 30;
 const canvas = document.getElementById("video-canvas");
@@ -188,7 +190,9 @@ function applyVisualTarget(visual) {
         particles[i].tx = points[i].x;
         particles[i].ty = points[i].y;
     }
-    hudTarget.innerText = targetKey.split("/").pop();
+    if (!isHeadless) {
+        hudTarget.innerText = targetKey.split("/").pop();
+    }
 }
 
 // Atualização física das partículas
@@ -250,6 +254,8 @@ function updatePhysics(dt, time, morphStrength = 1.0) {
 
 // Desenhar frame no canvas
 function drawFrame(currentFrameIndex) {
+    console.time('drawFrame');
+
     // Fundo esmero de escuridão profunda
     ctx.fillStyle = "#030305";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -268,7 +274,14 @@ function drawFrame(currentFrameIndex) {
     }
     ctx.stroke();
 
-    // Desenhar partículas
+    // Desenhar partículas usando Path2D Batching
+    const paths = Array.from({ length: 3 }, () =>
+        Array.from({ length: 3 }, () =>
+            Array.from({ length: 4 }, () => new Path2D())
+        )
+    );
+    const headPaths = Array.from({ length: 3 }, () => new Path2D());
+
     for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
@@ -276,28 +289,52 @@ function drawFrame(currentFrameIndex) {
         const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
         const factor = Math.min(1.0, Math.max(0.1, speed * 0.04));
         
-        // Glow cyan (#00f2ff) a azul escuro
-        const r = 0;
-        const g = Math.round(150 + factor * 105);
-        const b = 255;
-        const alpha = 0.2 + factor * 0.6;
+        // Discretização das propriedades visuais para agrupar em paths limitados
+        const colorIdx = factor < 0.33 ? 0 : (factor < 0.66 ? 1 : 2);
+        const widthIdx = p.z < 1.0 ? 0 : (p.z < 1.5 ? 1 : 2);
+        const alphaIdx = factor < 0.25 ? 0 : (factor < 0.5 ? 1 : (factor < 0.75 ? 2 : 3));
 
-        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        const path = paths[colorIdx][widthIdx][alphaIdx];
 
-        // Desenhar rastro de cauda
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
+        path.moveTo(p.x, p.y);
         for (let h = 0; h < 5; h++) {
-            ctx.lineTo(p.history[h].x, p.history[h].y);
+            path.lineTo(p.history[h].x, p.history[h].y);
         }
-        ctx.lineWidth = p.z * 1.2;
-        ctx.stroke();
+
+        // Cabeça da partícula
+        headPaths[colorIdx].rect(p.x - 1, p.y - 1, 2, 2);
+    }
+
+    // Desenha todos os paths
+    const colorStops = [
+        [0, 185, 255],
+        [0, 220, 255],
+        [0, 255, 255]
+    ];
+    const widthStops = [1.0, 1.5, 2.0];
+    const alphaStops = [0.3, 0.5, 0.7, 0.9];
+
+    for (let c = 0; c < 3; c++) {
+        const [r, g, b] = colorStops[c];
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.9)`;
+        ctx.fill(headPaths[c]);
+
+        for (let w = 0; w < 3; w++) {
+            ctx.lineWidth = widthStops[w];
+            for (let a = 0; a < 4; a++) {
+                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alphaStops[a]})`;
+                ctx.stroke(paths[c][w][a]);
+            }
+        }
     }
 
     // Telemetria HUD
-    const currentTime = currentFrameIndex / targetFps;
-    hudTime.innerText = `${currentTime.toFixed(2)}s`;
+    if (!isHeadless) {
+        const currentTime = currentFrameIndex / targetFps;
+        hudTime.innerText = `${currentTime.toFixed(2)}s`;
+    }
+
+    console.timeEnd('drawFrame');
 }
 
 // Simulação sequencial determinística para seek frame-accurate

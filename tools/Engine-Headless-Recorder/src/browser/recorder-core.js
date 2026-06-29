@@ -70,16 +70,27 @@ class CoreRecorder {
     };
 
     const config = {
-      codec: 'avc1.42e028', // H.264 Baseline Profile, Level 4.0 (suporta 1080x1080)
+      codec: 'avc1.42002A', // H.264 Baseline Profile, Level 4.2 (suporta 1920x1080 a 60fps)
       width: this.width,
       height: this.height,
       bitrate: this.bitrate,
       framerate: this.fps,
-      latencyMode: 'quality'
+      latencyMode: 'realtime', // TEST 2: Latency mode realtime
+      hardwareAcceleration: 'prefer-hardware' // TEST 1: Prefer hardware
     };
 
     this.encoder = new VideoEncoder(init);
-    this.encoder.configure(config);
+
+    // Configura o encoder de forma síncrona, capturando exceções caso não seja suportado
+    try {
+      this.encoder.configure(config);
+      console.log('[CoreRecorder] Encoder configured with prefer-hardware');
+    } catch (e) {
+      console.warn('[WARN] Encoder rejected prefer-hardware, falling back to no-preference');
+      config.hardwareAcceleration = 'no-preference';
+      this.encoder.configure(config);
+    }
+
     this.status = 'READY';
   }
 
@@ -94,6 +105,12 @@ class CoreRecorder {
     if (this.status !== 'RECORDING') {
       console.warn('[CoreRecorder] Tentativa de gravar frame fora do estado de gravação.');
       return;
+    }
+
+    // Encoder backpressure
+    while (this.encoder && this.encoder.encodeQueueSize > 16) {
+      if (this.encoder.state !== 'configured') break;
+      await new Promise(r => setTimeout(r, 2));
     }
 
     const timestampUs = timestampMs * 1000; // Converter milissegundos do renderizador para microssegundos
