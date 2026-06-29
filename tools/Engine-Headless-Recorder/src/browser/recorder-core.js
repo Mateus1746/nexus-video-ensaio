@@ -97,6 +97,15 @@ class CoreRecorder {
       return;
     }
 
+    // Controle de congestionamento: se a fila do VideoEncoder estiver cheia, yielda para dar vazão ao worker
+    while (this.encoder && this.encoder.encodeQueueSize > 16) {
+      if (this.encoder.state !== 'configured') {
+        console.warn('[CoreRecorder] Encoder não configurado ou fechado. Abortando controle de fila.');
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 2));
+    }
+
     const timestampUs = timestampMs * 1000; // Converter milissegundos do renderizador para microssegundos
     
     // Criar o frame WebCodecs usando o canvas
