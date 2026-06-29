@@ -8,6 +8,7 @@ const canvas = document.getElementById("video-canvas");
 const ctx = canvas.getContext("2d");
 const hudTime = document.getElementById("hud-time");
 const hudTarget = document.getElementById("hud-target");
+const isHeadless = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get("headless") === "true";
 
 let narrativeData = null;
 let worldGeoJSON = null;
@@ -214,7 +215,9 @@ function applyVisualTarget(visual) {
         particles[i].tx = points[i].x;
         particles[i].ty = points[i].y;
     }
-    hudTarget.innerText = targetKey.split("/").pop();
+    if (!isHeadless && hudTarget) {
+        hudTarget.innerText = targetKey.split("/").pop();
+    }
 }
 
 // Tabela de Busca (LUT) de alto desempenho para funções trigonométricas sines/cosines
@@ -239,6 +242,12 @@ function fastCos(rad) {
     let idx = (rad * RAD_TO_INDEX) | 0;
     return cosTable[idx & LUT_MASK];
 }
+
+const ALPHA_STRINGS = new Array(101);
+for (let i = 0; i <= 100; i++) {
+    ALPHA_STRINGS[i] = (i / 100).toFixed(2);
+}
+const colorCache = new Map();
 
 // Simplex noise approximation for curl/flow using LUT trig functions
 function curlNoise(x, y, time) {
@@ -400,8 +409,15 @@ function drawFrame(currentFrameIndex) {
         const lifeFade = fastSin(p.life * Math.PI);
         const alpha = Math.min(1.0, (0.3 + factor * 0.7) * lifeFade);
 
-        // String única de estilo para evitar duplicação de concatenação de strings
-        const styleStr = `rgba(${r},${g},${b},${alpha.toFixed(2)})`;
+        const alphaIdx = (alpha * 100) | 0;
+        const alphaStr = ALPHA_STRINGS[alphaIdx < 0 ? 0 : (alphaIdx > 100 ? 100 : alphaIdx)];
+        
+        const cacheKey = (r << 24) | (g << 16) | (b << 8) | alphaIdx;
+        let styleStr = colorCache.get(cacheKey);
+        if (!styleStr) {
+            styleStr = `rgba(${r},${g},${b},${alphaStr})`;
+            colorCache.set(cacheKey, styleStr);
+        }
         ctx.strokeStyle = styleStr;
         ctx.fillStyle = styleStr;
 
@@ -447,7 +463,9 @@ function drawFrame(currentFrameIndex) {
     }
 
     // Telemetria HUD
-    hudTime.innerText = `${currentTime.toFixed(2)}s`;
+    if (!isHeadless && hudTime) {
+        hudTime.innerText = `${currentTime.toFixed(2)}s`;
+    }
 }
 
 // Simulação sequencial determinística para seek frame-accurate
@@ -554,7 +572,6 @@ window.onload = async () => {
     initialized = true;
     window.__appReady = true;
 
-    const isHeadless = new URLSearchParams(window.location.search).get("headless") === "true";
     if (!isHeadless) {
         initSimulation();
         let startTime = performance.now();
