@@ -75,7 +75,8 @@ class CoreRecorder {
       height: this.height,
       bitrate: this.bitrate,
       framerate: this.fps,
-      latencyMode: 'quality'
+      latencyMode: 'quality',
+      hardwareAcceleration: 'no-preference'
     };
 
     this.encoder = new VideoEncoder(init);
@@ -94,6 +95,15 @@ class CoreRecorder {
     if (this.status !== 'RECORDING') {
       console.warn('[CoreRecorder] Tentativa de gravar frame fora do estado de gravação.');
       return;
+    }
+
+    // Controle de congestionamento: se a fila do VideoEncoder estiver cheia, yielda para dar vazão ao worker
+    while (this.encoder && this.encoder.encodeQueueSize > 16) {
+      if (this.encoder.state !== 'configured') {
+        console.warn('[CoreRecorder] Encoder não configurado ou fechado. Abortando controle de fila.');
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 2));
     }
 
     const timestampUs = timestampMs * 1000; // Converter milissegundos do renderizador para microssegundos

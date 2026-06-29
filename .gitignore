@@ -2,10 +2,11 @@ node_modules/
 .venv/
 venv/
 __pycache__/
-*.wav
 *.mp3
 *.mp4
-pipeline/sync_drive/
+pipeline/sync_drive/staging/
+pipeline/sync_drive/exports/
+pipeline/sync_drive/texts/
 assets/audio_raw/
 assets/generated/
 exports/

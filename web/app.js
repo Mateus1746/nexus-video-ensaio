@@ -2,12 +2,13 @@
 // SOVEREIGN ENSAY - PARTICLE TRANSITION FRONTEND ENGINE (SOTA 2026)
 // ============================================================
 
-const numParticles = 2000;
+const numParticles = 6000;
 const targetFps = 30;
 const canvas = document.getElementById("video-canvas");
 const ctx = canvas.getContext("2d");
 const hudTime = document.getElementById("hud-time");
 const hudTarget = document.getElementById("hud-target");
+const isHeadless = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get("headless") === "true";
 
 let narrativeData = null;
 let worldGeoJSON = null;
@@ -108,11 +109,14 @@ function initSimulation() {
             vy: 0,
             tx: centerX, // Target X
             ty: centerY, // Target Y
-            z: 0.5 + deterministicRandom() * 1.5,
+            z: 0.2 + deterministicRandom() * 2.5, // Maior variação de profundidade/tamanho
             noiseOffset: deterministicRandom() * 1000,
-            history: []
+            history: [],
+            life: deterministicRandom(), // Vida útil da partícula (0.0 a 1.0)
+            colorOffset: deterministicRandom() // Para variar cores individualmente
         };
-        for (let h = 0; h < 5; h++) {
+        // Histórico mais longo para caudas mais longas e dinâmicas
+        for (let h = 0; h < 8; h++) {
             p.history.push({ x: p.x, y: p.y });
         }
         particles.push(p);
@@ -145,7 +149,7 @@ async function loadResources() {
     }
     sampledShapes["test_assets/world.json"] = mapPoints;
 
-    // 3. Pré-carregar ícones
+    // 3. Pré-carregar ícones com dispersão extra
     const uniqueIcons = [...new Set(
         visuals
             .map(v => v.particles.target_icon)
@@ -174,6 +178,10 @@ async function loadResources() {
     console.log("🚀 All resources and shapes parsed successfully.");
 }
 
+// Variáveis de estado global para UI Dinâmica
+let currentTargetText = "";
+let lastTargetKey = "";
+
 // Configura o target das partículas para o visual corrente
 function applyVisualTarget(visual) {
     let targetKey = "test_assets/world.json";
@@ -183,15 +191,73 @@ function applyVisualTarget(visual) {
         targetKey = visual.particles.target_map;
     }
 
+    // Atualiza texto alvo se existir
+    if (visual.particles.target_text) {
+        currentTargetText = visual.particles.target_text;
+    } else {
+        currentTargetText = ""; // Limpa se não houver
+    }
+
+    // Aplica dispersão extra (explosão) na transição de alvos
+    if (lastTargetKey !== "" && lastTargetKey !== targetKey) {
+        for (let i = 0; i < particles.length; i++) {
+            // Empurrão radial na transição
+            const angle = deterministicRandom() * Math.PI * 2;
+            const force = 10 + deterministicRandom() * 30;
+            particles[i].vx += Math.cos(angle) * force;
+            particles[i].vy += Math.sin(angle) * force;
+        }
+    }
+    lastTargetKey = targetKey;
+
     const points = sampledShapes[targetKey] || sampledShapes["test_assets/world.json"];
     for (let i = 0; i < particles.length; i++) {
         particles[i].tx = points[i].x;
         particles[i].ty = points[i].y;
     }
-    hudTarget.innerText = targetKey.split("/").pop();
+    if (!isHeadless && hudTarget) {
+        hudTarget.innerText = targetKey.split("/").pop();
+    }
 }
 
-// Atualização física das partículas
+// Tabela de Busca (LUT) de alto desempenho para funções trigonométricas sines/cosines
+const LUT_SIZE = 8192;
+const LUT_MASK = LUT_SIZE - 1;
+const sinTable = new Float32Array(LUT_SIZE);
+const cosTable = new Float32Array(LUT_SIZE);
+const RAD_TO_INDEX = LUT_SIZE / (Math.PI * 2);
+
+for (let i = 0; i < LUT_SIZE; i++) {
+    const angle = (i / LUT_SIZE) * Math.PI * 2;
+    sinTable[i] = Math.sin(angle);
+    cosTable[i] = Math.cos(angle);
+}
+
+function fastSin(rad) {
+    let idx = (rad * RAD_TO_INDEX) | 0;
+    return sinTable[idx & LUT_MASK];
+}
+
+function fastCos(rad) {
+    let idx = (rad * RAD_TO_INDEX) | 0;
+    return cosTable[idx & LUT_MASK];
+}
+
+const ALPHA_STRINGS = new Array(101);
+for (let i = 0; i <= 100; i++) {
+    ALPHA_STRINGS[i] = (i / 100).toFixed(2);
+}
+const colorCache = new Map();
+
+// Simplex noise approximation for curl/flow using LUT trig functions
+function curlNoise(x, y, time) {
+    const scale = 0.005;
+    const n1 = fastSin(x * scale + time) * fastCos(y * scale - time);
+    const n2 = fastCos(x * scale - time) * fastSin(y * scale + time);
+    return { cx: n1, cy: n2 };
+}
+
+// Atualização física das partículas com LUTs
 function updatePhysics(dt, time, morphStrength = 1.0) {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
@@ -199,105 +265,231 @@ function updatePhysics(dt, time, morphStrength = 1.0) {
     for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
+        // Atualiza tempo de vida
+        p.life += dt * 0.5;
+        if (p.life > 1.0) p.life -= 1.0;
+
         // Shift trails
-        for (let h = 4; h > 0; h--) {
+        for (let h = 7; h > 0; h--) {
             p.history[h].x = p.history[h-1].x;
             p.history[h].y = p.history[h-1].y;
         }
         p.history[0].x = p.x;
         p.history[0].y = p.y;
 
-        // Física básica
-        const dx = p.x - centerX;
-        const dy = p.y - centerY;
-        const dist = Math.sqrt(dx*dx + dy*dy) || 0.1;
+        // Flow field via Curl Noise (Turbulência Fluida)
+        const curl = curlNoise(p.x, p.y, time * 0.5);
+        const flowForceX = curl.cx * 2.0 * p.z;
+        const flowForceY = curl.cy * 2.0 * p.z;
 
-        // Movimento de atração polar
-        const vrx = dx / dist;
-        const vry = dy / dist;
-        const vtx = -vry;
-        const vty = vrx;
+        p.vx += flowForceX * dt * 60.0;
+        p.vy += flowForceY * dt * 60.0;
 
-        const speed = 1.2 * p.z;
-        const ax = (vrx * (-0.1) + vtx * speed) * 0.05;
-        const ay = (vry * (-0.1) + vty * speed) * 0.05;
+        // Vibração browniana (jitter) com fastSin/fastCos
+        const vibSeed = time * 5.0 + p.noiseOffset;
+        p.vx += fastSin(vibSeed * 1.2) * 0.15 * p.z;
+        p.vy += fastCos(vibSeed * 0.9) * 0.15 * p.z;
 
-        p.vx = (p.vx + ax) * 0.95;
-        p.vy = (p.vy + ay) * 0.95;
-
-        // Vibração browniana
-        const vibSeed = time * 3.0 + p.noiseOffset;
-        p.vx += Math.sin(vibSeed * 1.2) * 0.08 * p.z;
-        p.vy += Math.cos(vibSeed * 0.9) * 0.08 * p.z;
-
-        // Atração magnética de Morph
+        // Atração magnética de Morph (com elástico interativo)
         const toTargetX = p.tx - p.x;
         const toTargetY = p.ty - p.y;
-        const distTarget = Math.sqrt(toTargetX*toTargetX + toTargetY*toTargetY) || 0.1;
         
-        const pullX = (toTargetX / distTarget) * Math.min(distTarget * 0.05, 5.0) * morphStrength;
-        const pullY = (toTargetY / distTarget) * Math.min(distTarget * 0.05, 5.0) * morphStrength;
+        // Atração baseada na distância (efeito mola)
+        const springForce = 0.02 * morphStrength;
+        const pullX = toTargetX * springForce;
+        const pullY = toTargetY * springForce;
 
         p.vx += pullX;
         p.vy += pullY;
-        p.vx *= (1.0 - (0.15 * morphStrength));
-        p.vy *= (1.0 - (0.15 * morphStrength));
+
+        // Atrito (Damping) dinâmico
+        const damping = 0.85 - (0.05 * morphStrength);
+        p.vx *= damping;
+        p.vy *= damping;
 
         p.x += p.vx;
         p.y += p.vy;
     }
 }
 
-// Desenhar frame no canvas
-function drawFrame(currentFrameIndex) {
-    // Fundo esmero de escuridão profunda
-    ctx.fillStyle = "#030305";
+// Efeito de Vinheta e Fundo Premium
+function drawBackground() {
+    // Fundo base esmero de escuridão profunda
+    ctx.fillStyle = "#010103";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Linhas técnicas decorativas
-    ctx.strokeStyle = "rgba(0, 242, 255, 0.02)";
-    ctx.lineWidth = 1;
+    // Gradiente radial para vinheta rica (centro levemente mais claro)
+    const gradient = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 100,
+        canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.8
+    );
+    gradient.addColorStop(0, "rgba(4, 8, 15, 0.9)");
+    gradient.addColorStop(1, "rgba(0, 0, 2, 1.0)");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawGrid(time) {
+    // Linhas técnicas decorativas com efeito de fade e movimento (Parallax/Scanning sutil)
+    ctx.lineWidth = 1.5;
+
+    const gridSize = 150;
+    const offsetX = (time * 10) % gridSize;
+    const offsetY = (time * 5) % gridSize;
+
     ctx.beginPath();
-    for (let x = 100; x < canvas.width; x += 200) {
+
+    // Grid Principal Glow
+    for (let x = offsetX; x < canvas.width; x += gridSize) {
+        const opacity = Math.sin((x / canvas.width) * Math.PI) * 0.15;
+        ctx.strokeStyle = `rgba(0, 242, 255, ${opacity})`;
         ctx.moveTo(x, 0);
         ctx.lineTo(x, canvas.height);
     }
-    for (let y = 100; y < canvas.height; y += 200) {
+    for (let y = offsetY; y < canvas.height; y += gridSize) {
+        const opacity = Math.sin((y / canvas.height) * Math.PI) * 0.15;
+        ctx.strokeStyle = `rgba(0, 242, 255, ${opacity})`;
         ctx.moveTo(0, y);
         ctx.lineTo(canvas.width, y);
     }
     ctx.stroke();
 
-    // Desenhar partículas
+    // Grid Secundário (fino)
+    ctx.beginPath();
+    ctx.lineWidth = 0.5;
+    for (let x = offsetX; x < canvas.width; x += gridSize / 2) {
+        ctx.strokeStyle = `rgba(0, 242, 255, 0.05)`;
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+    }
+    for (let y = offsetY; y < canvas.height; y += gridSize / 2) {
+        ctx.strokeStyle = `rgba(0, 242, 255, 0.05)`;
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+    }
+    ctx.stroke();
+}
+
+// Desenhar frame no canvas
+function drawFrame(currentFrameIndex) {
+    const currentTime = currentFrameIndex / targetFps;
+
+    drawBackground();
+    drawGrid(currentTime);
+
+    // Configuração de Global Composite Operation para Neon Glow (Additive Blending)
+    ctx.globalCompositeOperation = "screen";
+
+    // Criar os arrays de caminhos Path2D para agrupar as chamadas de stroke/fill
+    // 3 cores (0: Cyan, 1: Blue, 2: White) x 3 larguras x 4 níveis de opacidade
+    const paths = Array.from({ length: 3 }, () => Array.from({ length: 3 }, () => Array.from({ length: 4 }, () => new Path2D())));
+    const headPaths = Array.from({ length: 3 }, () => new Path2D());
+
+    // Desenhar partículas (Trails e Pontos)
     for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // Bloom de cor baseado na velocidade
-        const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
-        const factor = Math.min(1.0, Math.max(0.1, speed * 0.04));
+        // Algoritmo Alpha-Max Beta-Min para aproximação rápida de distância (sem Math.sqrt)
+        const absVx = p.vx < 0 ? -p.vx : p.vx;
+        const absVy = p.vy < 0 ? -p.vy : p.vy;
+        const speed = absVx > absVy ? absVx + 0.4 * absVy : absVy + 0.4 * absVx;
+        const factor = Math.min(1.0, Math.max(0.0, speed * 0.05));
         
-        // Glow cyan (#00f2ff) a azul escuro
-        const r = 0;
-        const g = Math.round(150 + factor * 105);
-        const b = 255;
-        const alpha = 0.2 + factor * 0.6;
+        // Ciclo de cor sutil (Cyan para Azul Elétrico para Branco)
+        const colorPhase = (p.colorOffset + currentTime * 0.1) % 1.0;
 
-        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-
-        // Desenhar rastro de cauda
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        for (let h = 0; h < 5; h++) {
-            ctx.lineTo(p.history[h].x, p.history[h].y);
+        let cIdx = 0; // Cyan
+        if (colorPhase > 0.5) {
+            cIdx = 1; // Blue
+        } else if (speed > 15.0) {
+            cIdx = 2; // White
         }
-        ctx.lineWidth = p.z * 1.2;
-        ctx.stroke();
+
+        // Fading dinâmico baseado no ciclo de vida e velocidade usando LUT fastSin
+        const lifeFade = fastSin(p.life * Math.PI);
+        const alpha = Math.min(1.0, (0.3 + factor * 0.7) * lifeFade);
+
+        // Classificação do Trail
+        const wVal = Math.max(0.5, (p.z * 1.5) * (1.0 + factor * 0.5));
+        let wIdx = 0;
+        if (wVal > 2.2) wIdx = 2;
+        else if (wVal > 1.0) wIdx = 1;
+
+        let aIdx = (alpha * 3) | 0;
+        if (aIdx < 0) aIdx = 0;
+        else if (aIdx > 3) aIdx = 3;
+
+        // Desenhar rastro de cauda dinâmico (mais longo se rápido)
+        const trailLength = Math.min(p.history.length, Math.max(2, Math.floor(speed * 0.8)));
+
+        const path = paths[cIdx][wIdx][aIdx];
+        path.moveTo(p.x, p.y);
+        for (let h = 0; h < trailLength; h++) {
+            path.lineTo(p.history[h].x, p.history[h].y);
+        }
+
+        // Cabeça da partícula (Glow core)
+        if (p.z > 1.5 && alpha > 0.4) {
+            const rVal = p.z * 1.2;
+            const hPath = headPaths[cIdx];
+            hPath.moveTo(p.x + rVal, p.y);
+            hPath.arc(p.x, p.y, rVal, 0, Math.PI * 2);
+        }
+    }
+
+    // Configurações de desenho
+    const colorValues = [
+        [0, 242, 255],   // Cyan
+        [30, 180, 255],  // Blue
+        [240, 250, 255]  // White
+    ];
+    const widthWeights = [0.6, 1.5, 3.0];
+    const alphaWeights = [0.25, 0.5, 0.75, 1.0];
+
+    // Renderizar todos os trails agrupados (reduz chamadas de stroke() em 99%)
+    for (let c = 0; c < 3; c++) {
+        const rgb = colorValues[c];
+        for (let w = 0; w < 3; w++) {
+            ctx.lineWidth = widthWeights[w];
+            for (let a = 0; a < 4; a++) {
+                ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alphaWeights[a]})`;
+                ctx.stroke(paths[c][w][a]);
+            }
+        }
+    }
+
+    // Renderizar todas as cabeças agrupadas (reduz chamadas de fill() em 99%)
+    for (let c = 0; c < 3; c++) {
+        const rgb = colorValues[c];
+        ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.75)`;
+        ctx.fill(headPaths[c]);
+    }
+
+    // Restaurar compósito padrão para UI/HUD
+    ctx.globalCompositeOperation = "source-over";
+
+    // Desenhar Overlay de Texto Dinâmico (se houver)
+    if (currentTargetText !== "") {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // fundo semi-transparente para o texto
+        ctx.fillRect(0, canvas.height / 2 - 40, canvas.width, 80);
+
+        ctx.font = "bold 48px 'Courier Prime', monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // Efeito Glitch/Sombra no texto
+        ctx.fillStyle = "rgba(0, 242, 255, 0.7)";
+        ctx.fillText(currentTargetText.toUpperCase(), canvas.width / 2 + 2, canvas.height / 2 + 2);
+
+        ctx.fillStyle = "rgba(255, 255, 255, 1.0)";
+        ctx.fillText(currentTargetText.toUpperCase(), canvas.width / 2, canvas.height / 2);
     }
 
     // Telemetria HUD
-    const currentTime = currentFrameIndex / targetFps;
-    hudTime.innerText = `${currentTime.toFixed(2)}s`;
+    if (!isHeadless && hudTime) {
+        hudTime.innerText = `${currentTime.toFixed(2)}s`;
+    }
 }
 
 // Simulação sequencial determinística para seek frame-accurate
@@ -327,14 +519,55 @@ function runSimulationToTime(timeSeconds) {
 // Protocolo de Gravação HyperFrames
 let initialized = false;
 
+window.__appReady = false;
+
+window.initializeScene = async function() {
+    if (!initialized) {
+        await loadResources();
+        initialized = true;
+        window.__appReady = true;
+    }
+};
+
+let lastSimulatedTime = -1;
+
 window.__hf = {
     duration: duration,
     seek: async (timeSeconds) => {
         if (!initialized) {
             await loadResources();
             initialized = true;
+            window.__appReady = true;
+            lastSimulatedTime = -1;
         }
-        runSimulationToTime(timeSeconds);
+        
+        const dt = 1 / targetFps;
+        const currentStep = Math.floor(timeSeconds * targetFps);
+        const lastStep = lastSimulatedTime >= 0 ? Math.floor(lastSimulatedTime * targetFps) : -1;
+
+        if (lastStep >= 0 && currentStep > lastStep) {
+            // Avança a simulação sequencialmente a partir do último estado, independentemente do FPS de gravação
+            for (let step = lastStep; step < currentStep; step++) {
+                const t = step * dt;
+                let visualIdx = 0;
+                for (let i = 0; i < timelines.length; i++) {
+                    if (t >= timelines[i]) {
+                        visualIdx = i + 1;
+                    }
+                }
+                const visual = visuals[visualIdx] || visuals[0];
+                applyVisualTarget(visual);
+                updatePhysics(dt, t, visual.particles.morph_strength);
+            }
+            lastSimulatedTime = timeSeconds;
+        } else if (timeSeconds === 0) {
+            initSimulation();
+            lastSimulatedTime = 0;
+        } else {
+            runSimulationToTime(timeSeconds);
+            lastSimulatedTime = timeSeconds;
+        }
+        
         const frameIndex = Math.min(
             Math.floor(timeSeconds * targetFps),
             Math.floor(duration * targetFps) - 1
@@ -350,7 +583,6 @@ window.__hf = {
         applyVisualTarget(visuals[visualIdx] || visuals[0]);
 
         drawFrame(frameIndex);
-        await new Promise(resolve => requestAnimationFrame(resolve));
     }
 };
 
@@ -362,8 +594,8 @@ window.renderFrame = async (tMs) => {
 window.onload = async () => {
     await loadResources();
     initialized = true;
+    window.__appReady = true;
 
-    const isHeadless = new URLSearchParams(window.location.search).get("headless") === "true";
     if (!isHeadless) {
         initSimulation();
         let startTime = performance.now();

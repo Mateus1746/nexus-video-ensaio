@@ -42,66 +42,73 @@ const BITRATE = args.bitrate || 6000000;
 // --mode=cpu  → usa FFmpeg + page.screenshot() com workers paralelos (padrão Jules VM)
 // --mode=gpu  → usa WebCodecs (pipeline original, requer GPU)
 // CPU_RENDER=1 (env var) → força modo CPU
-const RENDER_MODE = args.mode || (process.env.CPU_RENDER === '1' ? 'cpu' : 'cpu');
-const CPU_WORKERS = Math.max(1, Math.min(os.cpus().length, 4)); // até 4 workers
+const RENDER_MODE = args.mode || (process.env.CPU_RENDER === '1' ? 'cpu' : 'gpu');
+const CPU_WORKERS = Math.max(1, Math.min(os.cpus().length, 5)); // Limitado a 5 workers agora que o Canvas 2D está 99% mais leve
 const CAPTURE_WIDTH  = Math.round((args.width  || 1280));
 const CAPTURE_HEIGHT = Math.round((args.height || 720));
 // ─────────────────────────────────────────────────────────────────────────────
 
 
-const PORT = 8080;
-const PROJECTS_BASE_DIR = path.resolve(__dirname, '../../../../'); // /app
+let PORT; // assigned dynamically by startLocalServer
+const PROJECTS_BASE_DIR = path.resolve(__dirname, '../../../../');
+// Auto-detect entry page: Vite projects use dist/index.html, static projects use index.html
+const ENTRY_PAGE = fs.existsSync(path.join(PROJECTS_BASE_DIR, 'dist/index.html')) ? '/dist/index.html' : '/index.html';
 const OUTPUT_FILE_PATH = args.output 
   ? path.resolve(args.output) 
-  : path.resolve(__dirname, `../../../../nexus_media/video/${PROJECT_NAME}/genesis_final_SOTA.mp4`);
+  : path.resolve(__dirname, `../../../${PROJECT_NAME}/genesis_final_SOTA.mp4`);
+
+// Helper para servir um arquivo com headers MIME + COOP/COEP
+function serveFile(res, filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeTypes = {
+    '.html': 'text/html',
+    '.css': 'text/css',
+    '.js': 'application/javascript',
+    '.wasm': 'application/wasm',
+    '.json': 'application/json',
+    '.mp4': 'video/mp4',
+  };
+  const contentType = mimeTypes[ext] || 'application/octet-stream';
+  res.writeHead(200, {
+    'Content-Type': contentType,
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+  });
+  const stream = fs.createReadStream(filePath);
+  stream.pipe(res);
+}
 
 // 1. Iniciar servidor HTTP estático local para evitar restrições CORS com o OPFS e Web Workers
 function startLocalServer() {
-  return new Promise((resolve) => {
-    const server = http.createServer((req, res) => {
-      // Decodificar URL e remover parâmetros de consulta
-      const urlPath = decodeURIComponent(req.url.split('?')[0]);
-      const filePath = path.join(PROJECTS_BASE_DIR, urlPath.replace(/^\//, ''));
+  const server = http.createServer((req, res) => {
+    const urlPath = decodeURIComponent(req.url.split('?')[0]);
+    const filePath = path.join(PROJECTS_BASE_DIR, urlPath);
 
-      // Garantir proteção contra Path Traversal
-      if (!filePath.startsWith(PROJECTS_BASE_DIR)) {
-        res.statusCode = 403;
-        res.end('Forbidden');
+    if (!filePath.startsWith(PROJECTS_BASE_DIR)) {
+      res.statusCode = 403;
+      res.end('Forbidden');
+      return;
+    }
+
+    // Try project root first, fall back to dist/ for Vite build output
+    const relativePath = urlPath.replace(/^\//, '');
+    const tryPaths = [filePath, path.join(PROJECTS_BASE_DIR, 'dist', relativePath)];
+    (function tryServe(idx) {
+      if (idx >= tryPaths.length) {
+        res.statusCode = 404;
+        res.end('Not Found');
         return;
       }
-
-      fs.stat(filePath, (err, stats) => {
-        if (err || !stats.isFile()) {
-          res.statusCode = 404;
-          res.end('Not Found');
-          return;
-        }
-
-        // Tipos MIME necessários para a pipeline
-        const ext = path.extname(filePath).toLowerCase();
-        const mimeTypes = {
-          '.html': 'text/html',
-          '.css': 'text/css',
-          '.js': 'application/javascript',
-          '.wasm': 'application/wasm',
-          '.json': 'application/json',
-          '.mp4': 'video/mp4',
-        };
-        const contentType = mimeTypes[ext] || 'application/octet-stream';
-
-        res.writeHead(200, {
-          'Content-Type': contentType,
-          // Cabeçalhos de segurança CORS exigidos para WebCodecs e isolamento de Workers/SharedBuffers
-          'Cross-Origin-Opener-Policy': 'same-origin',
-          'Cross-Origin-Embedder-Policy': 'require-corp',
-        });
-
-        const stream = fs.createReadStream(filePath);
-        stream.pipe(res);
+      fs.stat(tryPaths[idx], (err, stats) => {
+        if (err || !stats.isFile()) return tryServe(idx + 1);
+        serveFile(res, tryPaths[idx]);
       });
-    });
+    })(0);
+  });
 
-    server.listen(PORT, '127.0.0.1', () => {
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      PORT = server.address().port;
       console.log(`[SERVER] Servidor de desenvolvimento ativo em http://127.0.0.1:${PORT}`);
       resolve(server);
     });
@@ -113,37 +120,98 @@ function startLocalServer() {
 // MODO CPU: FFmpeg + page.screenshot() paralelo
 // Evita WebCodecs em modo software (lento). Usa x264 ultrafast via FFmpeg pipe.
 // ══════════════════════════════════════════════════════════════════════════════
-async function renderWorker(browser, projectUrl, canvasSelector, frameIndices, frameIntervalMs, captureWidth, captureHeight, tempDir) {
-  const page = await browser.newPage();
-  page.on('console', msg => { if (msg.type() === 'error') console.error(`[BROWSER ERR] ${msg.text()}`); });
+async function renderChunk(browser, projectUrl, canvasSelector, frameIndices, frameIntervalMs, captureWidth, captureHeight) {
+  const context = await browser.createBrowserContext();
+  const page = await context.newPage();
   page.on('pageerror', err => console.error(`[BROWSER ERROR] ${err.toString()}`));
-  await page.goto(projectUrl, { waitUntil: 'networkidle0' });
-  await page.evaluate(() => document.fonts.ready);
 
-  // Inicializa cena se disponível
+  await page.goto(projectUrl, { waitUntil: 'load', timeout: 30000 });
+
+  // Wait for fonts (3s timeout)
+  await page.evaluate(() => Promise.race([
+    document.fonts.ready,
+    new Promise(r => setTimeout(r, 3000))
+  ]));
+
+  // Wait for renderFrame hook to be available (some projects set it async)
   await page.evaluate(async () => {
     if (typeof window.initializeScene === 'function') await window.initializeScene();
-    if (typeof window.__appReady !== 'undefined') {
-      let attempts = 0;
-      while (!window.__appReady && attempts++ < 100) await new Promise(r => setTimeout(r, 50));
+    while (typeof window.renderFrame !== 'function') {
+      await new Promise(r => setTimeout(r, 50));
     }
   });
+
+  // Garantir que todos os recursos da aplicação (JSON, GeoJSON, ícones) estão carregados antes de renderizar
+  await page.waitForFunction(() => window.__appReady === true, { timeout: 30000 });
 
   const frames = [];
   for (const frameIndex of frameIndices) {
     const timeMs = frameIndex * frameIntervalMs;
-    await page.evaluate((t, sel) => {
-      if (typeof window.renderFrame === 'function') window.renderFrame(t);
-    }, timeMs, canvasSelector);
-    const jpeg = await page.screenshot({
-      type: 'jpeg',
-      quality: 90,
-      clip: { x: 0, y: 0, width: captureWidth, height: captureHeight }
-    });
-    frames.push({ frameIndex, jpeg });
+    try {
+      await page.evaluate((t) => { window.renderFrame(t); }, timeMs);
+      const jpeg = await page.screenshot({
+        type: 'jpeg',
+        quality: 70,
+        captureBeyondViewport: false
+      });
+      frames.push({ frameIndex, jpeg });
+    } catch (ssErr) {
+      console.error(`[RENDER] Screenshot error at frame ${frameIndex}: ${ssErr.message}`);
+      break;
+    }
   }
-  await page.close();
+  await context.close();
   return frames;
+}
+
+async function renderAllFrames(browser, projectUrl, canvasSelector, totalFrames, frameIntervalMs, captureWidth, captureHeight) {
+  const CHUNK_SIZE = 100; // 100 frames (~4s)
+  const results = [];
+  
+  // Criar todos os chunks
+  const chunks = [];
+  for (let start = 0; start < totalFrames; start += CHUNK_SIZE) {
+    const end = Math.min(start + CHUNK_SIZE, totalFrames);
+    const indices = Array.from({ length: end - start }, (_, i) => start + i);
+    chunks.push({ start, end, indices });
+  }
+
+  console.log(`[RENDER] Total de ${chunks.length} chunks para processar em ${CPU_WORKERS} workers.`);
+
+  // Pool de workers concorrentes
+  const resultsMap = new Map();
+  let chunkIdx = 0;
+
+  async function runWorker(workerId) {
+    while (true) {
+      // Obter o próximo chunk thread-safe
+      const currentIdx = chunkIdx++;
+      if (currentIdx >= chunks.length) break;
+      
+      const chunk = chunks[currentIdx];
+      console.log(`[RENDER Worker ${workerId}] Iniciando Chunk ${chunk.start}-${chunk.end-1} (${chunk.indices.length} frames)`);
+      
+      const chunkFrames = await renderChunk(browser, projectUrl, canvasSelector, chunk.indices, frameIntervalMs, captureWidth, captureHeight);
+      resultsMap.set(currentIdx, chunkFrames);
+      
+      console.log(`[RENDER Worker ${workerId}] Concluído Chunk ${chunk.start}-${chunk.end-1}`);
+    }
+  }
+
+  // Inicializa todos os workers em paralelo
+  const promises = [];
+  for (let i = 0; i < CPU_WORKERS; i++) {
+    promises.push(runWorker(i + 1));
+  }
+
+  await Promise.all(promises);
+
+  // Remontar resultados na ordem correta
+  for (let i = 0; i < chunks.length; i++) {
+    results.push(resultsMap.get(i));
+  }
+
+  return results.flat().sort((a, b) => a.frameIndex - b.frameIndex);
 }
 
 async function recordCPU() {
@@ -163,49 +231,44 @@ async function recordCPU() {
   }
 
   try {
-    console.log(`[CPU-RECORDER] Iniciando modo CPU com ${CPU_WORKERS} workers paralelos`);
+    console.log(`[CPU-RECORDER] Iniciando modo CPU (renderização em página única)`);
     console.log(`[CPU-RECORDER] Resolução de captura: ${CAPTURE_WIDTH}x${CAPTURE_HEIGHT} → upscale 1920x1080`);
     console.log(`[CPU-RECORDER] Config: ${DURATION_S}s | ${FPS} FPS | ${totalFrames} frames | ${CPU_WORKERS} workers`);
 
+    // Viewport define a resolução máxima. Upscale 1920x1080 é feito no FFmpeg.
+    const VIEWPORT_W = 1280, VIEWPORT_H = 720;
     browser = await puppeteer.launch({
       headless: 'new',
+      protocolTimeout: 0,
+      env: {
+        ...process.env,
+        __NV_PRIME_RENDER_OFFLOAD: '1',
+        __GLX_VENDOR_LIBRARY_NAME: 'nvidia'
+      },
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--use-gl=swiftshader',
-        '--ignore-gpu-blacklist',
         '--disable-web-security',
-        '--font-render-hinting=none'
+        '--font-render-hinting=none',
+        '--ignore-gpu-blocklist',
+        '--disable-gpu-sandbox',
+        '--enable-gpu-rasterization',
+        '--enable-oop-rasterization',
+        '--use-gl=angle',
+        '--use-angle=gl'
       ],
-      defaultViewport: { width: CAPTURE_WIDTH, height: CAPTURE_HEIGHT }
+      defaultViewport: { width: VIEWPORT_W, height: VIEWPORT_H }
     });
 
-    const projectUrl = `http://127.0.0.1:${PORT}/nexus_media/video/${PROJECT_NAME}/index.html?headless=true`;
+    const projectUrl = `http://127.0.0.1:${PORT}${ENTRY_PAGE}?headless=true`;
 
-    // Dividir frames entre workers
-    const chunkSize = Math.ceil(totalFrames / CPU_WORKERS);
-    const chunks = [];
-    for (let w = 0; w < CPU_WORKERS; w++) {
-      const start = w * chunkSize;
-      const end   = Math.min(start + chunkSize, totalFrames);
-      if (start < totalFrames) chunks.push(Array.from({ length: end - start }, (_, i) => start + i));
-    }
-
-    console.log(`[CPU-RECORDER] Distribuindo ${totalFrames} frames em ${chunks.length} workers...`);
+    console.log(`[CPU-RECORDER] Renderizando ${totalFrames} frames em uma única página...`);
     const renderStart = Date.now();
 
-    // Executar todos os workers em paralelo
-    const results = await Promise.all(
-      chunks.map((frameIndices, wIdx) => {
-        console.log(`[CPU-RECORDER] Worker ${wIdx}: frames ${frameIndices[0]}-${frameIndices[frameIndices.length-1]}`);
-        return renderWorker(browser, projectUrl, CANVAS_SELECTOR, frameIndices, frameIntervalMs, CAPTURE_WIDTH, CAPTURE_HEIGHT, null);
-      })
-    );
+    const allFrames = await renderAllFrames(browser, projectUrl, CANVAS_SELECTOR, totalFrames, frameIntervalMs, CAPTURE_WIDTH, CAPTURE_HEIGHT);
 
     const renderElapsed = ((Date.now() - renderStart) / 1000).toFixed(1);
-    const allFrames = results.flat().sort((a, b) => a.frameIndex - b.frameIndex);
     console.log(`[CPU-RECORDER] Renderização concluída em ${renderElapsed}s. Iniciando encoding com FFmpeg...`);
 
     // Garantir que o diretório de saída existe
@@ -269,19 +332,32 @@ async function record() {
     console.log(`[RECORDER] Config: ${DURATION_S}s | ${FPS} FPS | Bitrate: ${BITRATE} bps | Canvas: ${CANVAS_SELECTOR}`);
 
     // Iniciar Puppeteer
+    // Iniciar Puppeteer
     browser = await puppeteer.launch({
       headless: 'new',
+      protocolTimeout: 0,
+      env: {
+        ...process.env,
+        __NV_PRIME_RENDER_OFFLOAD: '1',
+        __GLX_VENDOR_LIBRARY_NAME: 'nvidia'
+      },
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--use-gl=swiftshader',
-        '--ignore-gpu-blacklist',
         '--disable-web-security',
-        '--font-render-hinting=none'
+        '--font-render-hinting=none',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--ignore-gpu-blocklist',
+        '--disable-gpu-sandbox',
+        '--enable-gpu-rasterization',
+        '--enable-oop-rasterization',
+        '--use-gl=angle',
+        '--use-angle=gl'
       ],
-      defaultViewport: { width: 1080, height: 1080 }
+      defaultViewport: { width: CAPTURE_WIDTH, height: CAPTURE_HEIGHT }
     });
 
     const page = await browser.newPage();
@@ -291,61 +367,66 @@ async function record() {
     page.on('pageerror', err => console.error(`[BROWSER ERROR] ${err.toString()}`));
 
     // Abrir a fábrica web correspondente usando o servidor local
-    const projectUrl = `http://127.0.0.1:${PORT}/${PROJECT_NAME}/index.html?headless=true`;
+    const projectUrl = `http://127.0.0.1:${PORT}${ENTRY_PAGE}?headless=true`;
     console.log(`[RECORDER] Navegando para ${projectUrl}`);
-    await page.goto(projectUrl, { waitUntil: 'networkidle0' });
+    await page.goto(projectUrl, { waitUntil: 'load' });
 
     console.log(`[RECORDER] Aguardando fontes estarem prontas...`);
     await page.evaluate(() => document.fonts.ready);
     console.log(`[RECORDER] Fontes carregadas.`);
 
+    console.log(`[RECORDER] Aguardando inicialização dos recursos da aplicação...`);
+    await page.waitForFunction(() => window.__appReady === true, { timeout: 30000 });
+    console.log(`[RECORDER] Aplicação pronta.`);
+
     // 1. Injetar o CoreRecorder dinamicamente na página
     console.log(`[RECORDER] Injetando gravador na página...`);
-    await page.addScriptTag({ url: `http://127.0.0.1:${PORT}/tools/Engine-Headless-Recorder/src/browser/recorder-core.js` });
+    await page.addScriptTag({ url: `http://127.0.0.1:${PORT}/Engine-Headless-Recorder/src/browser/recorder-core.js` });
 
     // 2. Inicializar o gravador no contexto do browser
     console.log(`[RECORDER] Inicializando o CoreRecorder e abrindo fluxo fMP4 no OPFS...`);
-    await page.evaluate(async (fpsCount, bitrateValue) => {
+    await page.evaluate(async (fpsCount, bitrateValue, capWidth, capHeight) => {
       window.recorder = new window.CoreRecorder({
         fps: fpsCount,
-        width: 1080,
-        height: 1080,
+        width: capWidth,
+        height: capHeight,
         bitrate: bitrateValue
       });
       await window.recorder.initialize();
       window.recorder.start();
-    }, FPS, BITRATE);
+    }, FPS, BITRATE, CAPTURE_WIDTH, CAPTURE_HEIGHT);
 
     console.log(`[RECORDER] Iniciando loop de gravação virtual síncrona: ${totalFrames} frames...`);
-    const renderStart = Date.now();
 
-    for (let i = 0; i < totalFrames; i++) {
-      const timeMs = i * frameIntervalMs;
-      
-      // 3. Atualizar frame e gravar usando o buffer do Canvas
-      await page.evaluate(async (t, canvasSelector) => {
-        // Avança a simulação física/gráfica para o tempo t se implementado
-        if (typeof window.renderFrame === 'function') {
-          window.renderFrame(t);
-        } else if (t === 0) {
-          console.warn('[RECORDER BROWSER] Alerta: window.renderFrame não está definido. A gravação prosseguirá capturando o estado do canvas.');
-        }
-        // Codifica os pixels gráficos no encoder (usa seletor ou fallback de canvas genérico)
-        const canvas = document.querySelector(canvasSelector) || document.querySelector('canvas');
-        if (!canvas) {
-          throw new Error(`[RECORDER BROWSER] Canvas não encontrado com o seletor: ${canvasSelector}`);
-        }
-        await window.recorder.recordFrame(canvas, t);
-      }, timeMs, CANVAS_SELECTOR);
-
-      // Logs de progresso
-      if ((i + 1) % FPS === 0) {
-        const secRecorded = (i + 1) / FPS;
-        const elapsedSec = (Date.now() - renderStart) / 1000;
-        const renderFps = (i + 1) / elapsedSec;
-        console.log(`[RECORDER] Progresso: ${secRecorded}/${DURATION_S}s (${i + 1}/${totalFrames} frames) | Velocidade virtual: ${renderFps.toFixed(1)} FPS`);
+    // Executar todo o loop de gravação de frames no contexto do navegador de uma só vez para eliminar latência de WebSocket IPC
+    await page.evaluate(async (totFrames, intervalMs, canvasSelector, fps, totalDur) => {
+      const canvas = document.querySelector(canvasSelector) || document.querySelector('canvas');
+      if (!canvas) {
+        throw new Error(`[RECORDER BROWSER] Canvas não encontrado com o seletor: ${canvasSelector}`);
       }
-    }
+
+      const loopStart = Date.now();
+      for (let i = 0; i < totFrames; i++) {
+        const timeMs = i * intervalMs;
+        if (typeof window.renderFrame === 'function') {
+          await window.renderFrame(timeMs);
+        }
+        await window.recorder.recordFrame(canvas, timeMs);
+
+        // Yield via setTimeout(0) a cada 10 frames para aliviar a thread principal e evitar suspensão de budget de CPU do Chrome
+        if (i % 10 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+
+        // Imprime o progresso no console do browser (capturado por page.on('console'))
+        if ((i + 1) % fps === 0) {
+          const secRecorded = (i + 1) / fps;
+          const elapsedSec = (Date.now() - loopStart) / 1000;
+          const renderFps = (i + 1) / elapsedSec;
+          console.log(`[RECORDER] Progresso: ${secRecorded}/${totalDur}s (${i + 1}/${totFrames} frames) | Velocidade virtual: ${renderFps.toFixed(1)} FPS`);
+        }
+      }
+    }, totalFrames, frameIntervalMs, CANVAS_SELECTOR, FPS, DURATION_S);
 
     // 4. Parar a gravação no browser (fecha o codificador e o OPFS)
     console.log(`[RECORDER] Finalizando streams e fechando arquivo fMP4...`);
@@ -353,29 +434,48 @@ async function record() {
       await window.recorder.stop();
     });
 
-    // 5. Transferir o arquivo MP4 resultante do OPFS do browser para o disco local
-    console.log(`[RECORDER] Baixando arquivo gerado do OPFS...`);
-    const base64Mp4 = await page.evaluate(async () => {
+    // 5. Expor métodos para download em chunks para evitar estouro de limite de string do V8 (RangeError: Invalid string length)
+    const writeStream = fs.createWriteStream(OUTPUT_FILE_PATH);
+    await page.exposeFunction('writeChunk', (base64Chunk) => {
+      const buffer = Buffer.from(base64Chunk, 'base64');
+      writeStream.write(buffer);
+    });
+
+    const streamClosePromise = new Promise((resolve) => {
+      writeStream.on('finish', resolve);
+    });
+
+    await page.exposeFunction('closeStream', () => {
+      writeStream.end();
+    });
+
+    // 6. Ler o arquivo do OPFS em blocos e enviar ao Node.js
+    await page.evaluate(async () => {
       const root = await navigator.storage.getDirectory();
       const fileHandle = await root.getFileHandle("output_fragmented.mp4");
       const file = await fileHandle.getFile();
-      console.log(`[OPFS] Tamanho do arquivo lido no navegador principal: ${file.size} bytes`);
-      const arrayBuffer = await file.arrayBuffer();
-
-      // Converte ArrayBuffer em Base64 usando blocos rápidos
-      let binary = '';
-      const bytes = new Uint8Array(arrayBuffer);
-      const len = bytes.byteLength;
-      const chunkSize = 65536;
-      for (let i = 0; i < len; i += chunkSize) {
-        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+      console.log(`[OPFS] Transferindo arquivo de ${file.size} bytes para o host em chunks de 8MB...`);
+      
+      const size = file.size;
+      const chunkSize = 8 * 1024 * 1024; // chunks de 8MB
+      
+      for (let offset = 0; offset < size; offset += chunkSize) {
+        const slice = file.slice(offset, offset + chunkSize);
+        const arrayBuffer = await slice.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        
+        let binary = '';
+        const subChunkSize = 65536;
+        for (let i = 0; i < bytes.length; i += subChunkSize) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + subChunkSize));
+        }
+        const base64 = btoa(binary);
+        await window.writeChunk(base64);
       }
-      return btoa(binary);
+      await window.closeStream();
     });
 
-    // 6. Escrever o arquivo MP4 localmente
-    const videoBuffer = Buffer.from(base64Mp4, 'base64');
-    fs.writeFileSync(OUTPUT_FILE_PATH, videoBuffer);
+    await streamClosePromise;
     console.log(`[RECORDER] Arquivo de vídeo gravado com sucesso em: ${OUTPUT_FILE_PATH}`);
 
   } finally {
