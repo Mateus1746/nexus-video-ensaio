@@ -240,17 +240,23 @@ async function recordCPU() {
     browser = await puppeteer.launch({
       headless: 'new',
       protocolTimeout: 0,
+      env: {
+        ...process.env,
+        __NV_PRIME_RENDER_OFFLOAD: '1',
+        __GLX_VENDOR_LIBRARY_NAME: 'nvidia'
+      },
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-web-security',
         '--font-render-hinting=none',
-        '--enable-gpu',
+        '--ignore-gpu-blocklist',
+        '--disable-gpu-sandbox',
+        '--enable-gpu-rasterization',
+        '--enable-oop-rasterization',
         '--use-gl=angle',
-        '--use-angle=vulkan',
-        '--enable-features=Vulkan,UseOzonePlatform',
-        '--ozone-platform=headless'
+        '--use-angle=gl'
       ],
       defaultViewport: { width: VIEWPORT_W, height: VIEWPORT_H }
     });
@@ -330,6 +336,11 @@ async function record() {
     browser = await puppeteer.launch({
       headless: 'new',
       protocolTimeout: 0,
+      env: {
+        ...process.env,
+        __NV_PRIME_RENDER_OFFLOAD: '1',
+        __GLX_VENDOR_LIBRARY_NAME: 'nvidia'
+      },
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -338,7 +349,13 @@ async function record() {
         '--font-render-hinting=none',
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding'
+        '--disable-renderer-backgrounding',
+        '--ignore-gpu-blocklist',
+        '--disable-gpu-sandbox',
+        '--enable-gpu-rasterization',
+        '--enable-oop-rasterization',
+        '--use-gl=angle',
+        '--use-angle=gl'
       ],
       defaultViewport: { width: 1080, height: 1080 }
     });
