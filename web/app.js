@@ -381,6 +381,11 @@ function drawFrame(currentFrameIndex) {
     // Configuração de Global Composite Operation para Neon Glow (Additive Blending)
     ctx.globalCompositeOperation = "screen";
 
+    // Criar os arrays de caminhos Path2D para agrupar as chamadas de stroke/fill
+    // 3 cores (0: Cyan, 1: Blue, 2: White) x 3 larguras x 4 níveis de opacidade
+    const paths = Array.from({ length: 3 }, () => Array.from({ length: 3 }, () => Array.from({ length: 4 }, () => new Path2D())));
+    const headPaths = Array.from({ length: 3 }, () => new Path2D());
+
     // Desenhar partículas (Trails e Pontos)
     for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
@@ -394,52 +399,71 @@ function drawFrame(currentFrameIndex) {
         // Ciclo de cor sutil (Cyan para Azul Elétrico para Branco)
         const colorPhase = (p.colorOffset + currentTime * 0.1) % 1.0;
 
-        let r = 0, g = 242, b = 255; // Base Cyan
+        let cIdx = 0; // Cyan
         if (colorPhase > 0.5) {
-            // Azul mais profundo e rápido
-            r = Math.round(50 * factor);
-            g = Math.round(150 + 100 * factor);
-            b = 255;
+            cIdx = 1; // Blue
         } else if (speed > 15.0) {
-            // Hot core (branco/cyan brilhante) para partículas muito rápidas
-            r = 150; g = 255; b = 255;
+            cIdx = 2; // White
         }
 
         // Fading dinâmico baseado no ciclo de vida e velocidade usando LUT fastSin
         const lifeFade = fastSin(p.life * Math.PI);
         const alpha = Math.min(1.0, (0.3 + factor * 0.7) * lifeFade);
 
-        const alphaIdx = (alpha * 100) | 0;
-        const alphaStr = ALPHA_STRINGS[alphaIdx < 0 ? 0 : (alphaIdx > 100 ? 100 : alphaIdx)];
-        
-        const cacheKey = (r << 24) | (g << 16) | (b << 8) | alphaIdx;
-        let styleStr = colorCache.get(cacheKey);
-        if (!styleStr) {
-            styleStr = `rgba(${r},${g},${b},${alphaStr})`;
-            colorCache.set(cacheKey, styleStr);
-        }
-        ctx.strokeStyle = styleStr;
-        ctx.fillStyle = styleStr;
+        // Classificação do Trail
+        const wVal = Math.max(0.5, (p.z * 1.5) * (1.0 + factor * 0.5));
+        let wIdx = 0;
+        if (wVal > 2.2) wIdx = 2;
+        else if (wVal > 1.0) wIdx = 1;
+
+        let aIdx = (alpha * 3) | 0;
+        if (aIdx < 0) aIdx = 0;
+        else if (aIdx > 3) aIdx = 3;
 
         // Desenhar rastro de cauda dinâmico (mais longo se rápido)
         const trailLength = Math.min(p.history.length, Math.max(2, Math.floor(speed * 0.8)));
 
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
+        const path = paths[cIdx][wIdx][aIdx];
+        path.moveTo(p.x, p.y);
         for (let h = 0; h < trailLength; h++) {
-            ctx.lineTo(p.history[h].x, p.history[h].y);
+            path.lineTo(p.history[h].x, p.history[h].y);
         }
-
-        // Ajuste de largura (perspectiva Z + dilatação por velocidade)
-        ctx.lineWidth = Math.max(0.5, (p.z * 1.5) * (1.0 + factor * 0.5));
-        ctx.stroke();
 
         // Cabeça da partícula (Glow core)
         if (p.z > 1.5 && alpha > 0.4) {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.z * 1.2, 0, Math.PI * 2);
-            ctx.fill();
+            const rVal = p.z * 1.2;
+            const hPath = headPaths[cIdx];
+            hPath.moveTo(p.x + rVal, p.y);
+            hPath.arc(p.x, p.y, rVal, 0, Math.PI * 2);
         }
+    }
+
+    // Configurações de desenho
+    const colorValues = [
+        [0, 242, 255],   // Cyan
+        [30, 180, 255],  // Blue
+        [240, 250, 255]  // White
+    ];
+    const widthWeights = [0.6, 1.5, 3.0];
+    const alphaWeights = [0.25, 0.5, 0.75, 1.0];
+
+    // Renderizar todos os trails agrupados (reduz chamadas de stroke() em 99%)
+    for (let c = 0; c < 3; c++) {
+        const rgb = colorValues[c];
+        for (let w = 0; w < 3; w++) {
+            ctx.lineWidth = widthWeights[w];
+            for (let a = 0; a < 4; a++) {
+                ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alphaWeights[a]})`;
+                ctx.stroke(paths[c][w][a]);
+            }
+        }
+    }
+
+    // Renderizar todas as cabeças agrupadas (reduz chamadas de fill() em 99%)
+    for (let c = 0; c < 3; c++) {
+        const rgb = colorValues[c];
+        ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.75)`;
+        ctx.fill(headPaths[c]);
     }
 
     // Restaurar compósito padrão para UI/HUD
