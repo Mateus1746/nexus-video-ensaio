@@ -312,7 +312,7 @@ async function record() {
     // Abrir a fábrica web correspondente usando o servidor local
     const projectUrl = `http://127.0.0.1:${PORT}${ENTRY_PAGE}?headless=true`;
     console.log(`[RECORDER] Navegando para ${projectUrl}`);
-    await page.goto(projectUrl, { waitUntil: 'networkidle0' });
+    await page.goto(projectUrl, { waitUntil: 'load' });
 
     console.log(`[RECORDER] Aguardando fontes estarem prontas...`);
     await page.evaluate(() => document.fonts.ready);
