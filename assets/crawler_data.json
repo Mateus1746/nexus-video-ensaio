@@ -1,0 +1,22 @@
+{
+    "metadata": {
+        "source": "Vox Media",
+        "author": "Johnny Harris Style",
+        "logo": "vox_logo.png"
+    },
+    "annotations": [
+        {
+            "type": "highlight",
+            "phrase": "unprecedented arms race"
+        },
+        {
+            "type": "circle",
+            "phrase": "military expenditure skyrocketed"
+        },
+        {
+            "type": "highlight",
+            "phrase": "global wealth was now heavily concentrated"
+        }
+    ],
+    "layout": "document_inspect"
+}

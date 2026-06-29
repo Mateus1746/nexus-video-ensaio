@@ -8,29 +8,37 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Outfit:wght@300;400;700;900&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./index.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
     <div id="wrapper">
-        <div class="split-pane left-pane">
-            <div class="archive-header">DECLASSIFIED DATA</div>
-            <div id="viewport-container">
-                <canvas id="video-canvas" width="1920" height="1080"></canvas>
-            </div>
-            <div class="archive-footer">ANALYSIS: OMEGA PROTOCOL</div>
+        <div id="viewport-container">
+            <canvas id="video-canvas" width="1920" height="1080"></canvas>
         </div>
-        <div class="split-pane right-pane">
-            <div class="typewriter-container">
-                <p>SUBJECT: GLOBAL ESCALATION</p>
-                <p>STATUS: ACTIVE</p>
-                <div class="timeline-chart">
-                    <div class="chart-bar" style="width: 40%;"></div>
-                    <div class="chart-bar" style="width: 70%;"></div>
-                    <div class="chart-bar" style="width: 90%;"></div>
+
+        <!-- Overlay HTML elements -->
+        <div id="overlay-layer">
+            <div class="split-pane right-pane">
+                <div class="archive-header">DECLASSIFIED DATA</div>
+                <div class="typewriter-container">
+                    <p id="hud-subject">SUBJECT: GLOBAL ESCALATION</p>
+                    <p>STATUS: ACTIVE</p>
+                    <div class="timeline-chart">
+                        <div class="chart-bar" style="width: 40%;"></div>
+                        <div class="chart-bar" style="width: 70%;"></div>
+                        <div class="chart-bar" style="width: 90%;"></div>
+                    </div>
                 </div>
+                <div id="hud-telemetry">
+                    T+ <span id="hud-time">0.00s</span><br/>
+                    TRGT: <span id="hud-target">world.json</span>
+                </div>
+                <div class="archive-footer">ANALYSIS: OMEGA PROTOCOL</div>
             </div>
-            <div id="hud-telemetry">
-                T+ <span id="hud-time">0.00s</span><br/>
-                TRGT: <span id="hud-target">world.json</span>
+
+            <div id="subtitle-container">
+                <div id="subtitle-text"></div>
             </div>
         </div>
     </div>

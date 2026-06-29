@@ -33,7 +33,7 @@ process.argv.slice(2).forEach(val => {
 
 // Configurações padrão com parâmetros extraídos da CLI
 const PROJECT_NAME = args.project || 'olhos';
-const CANVAS_SELECTOR = args.canvas || '#nox-canvas';
+const CANVAS_SELECTOR = args.canvas || '#video-canvas';
 const DURATION_S = args.duration || 35;
 const FPS = args.fps || 60;
 const BITRATE = args.bitrate || 6000000;
