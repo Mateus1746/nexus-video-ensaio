@@ -1,84 +1,41 @@
 [
   {
-    "id": "scene_01_cold_war_start",
-    "title": "The Dawn of the Cold War",
-    "text": "In the aftermath of World War II, a new kind of conflict emerged. The world was divided into two distinct spheres of influence, sparking an unprecedented arms race.",
-    "background": false,
-    "grit": false,
-    "sub_shot_timings": [4.0, 7.5],
-    "visuals": [
-      {
-        "particles": {
-          "density": 45000,
-          "speed": 0.5,
-          "turbulence": 0.5,
-          "morph_strength": 1.0,
-          "target_map": "world"
-        }
-      },
-      {
-        "particles": {
-          "density": 45000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "test_assets/dollar.png"
-        }
-      },
-      {
-        "particles": {
-          "density": 45000,
-          "speed": 0.8,
-          "turbulence": 0.3,
-          "morph_strength": 1.0,
-          "target_icon": "test_assets/formula.png"
-        }
-      }
-    ]
-  },
-  {
-    "id": "scene_02_military_spending",
-    "title": "Unprecedented Escalation",
-    "text": "By 1950, military expenditure skyrocketed. The United States and its allies began investing billions into defense and nuclear deterrence, fundamentally shifting global economics.",
-    "background": false,
-    "grit": false,
-    "bar_chart": {
-      "title": "US Military Expenditure",
-      "unit": "Billion USD",
-      "data": [
-        {"label": "1940", "value": 1.5, "color": "#ffffff"},
-        {"label": "1945", "value": 90.0, "color": "#00f2ff"},
-        {"label": "1950", "value": 15.0, "color": "#ffffff"},
-        {"label": "1955", "value": 45.0, "color": "#00f2ff"}
-      ]
+    "id": "scene_01_intro",
+    "title": "The Dawn of the New Crisis",
+    "text": "In recent years, global escalation has reached unprecedented levels, fundamentally shifting the geopolitical landscape.",
+    "source": {
+      "vehicle": "Vox",
+      "author": "John Doe",
+      "date": "2026-06-13",
+      "logo": "assets/icon_newspaper.png"
     },
-    "visuals": [
+    "layout": "split_screen",
+    "annotations": [
       {
-        "particles": {
-          "density": 45000,
-          "speed": 1.5,
-          "turbulence": 0.2,
-          "morph_strength": 1.0,
-          "morph_to_chart": true
-        }
+        "type": "highlight",
+        "text": "unprecedented levels"
+      },
+      {
+        "type": "circle",
+        "text": "geopolitical landscape"
       }
     ]
   },
   {
-    "id": "scene_03_the_cost",
-    "title": "The Price of Power",
-    "text": "This financial pivot meant that global wealth was now heavily concentrated in the military-industrial complex. The true cost of this power struggle was measured not just in dollars, but in the reshaping of society itself.",
-    "background": false,
-    "grit": false,
-    "visuals": [
+    "id": "scene_02_economics",
+    "title": "Economic Fallout",
+    "text": "The price of power is measured not just in dollars, but in the reshaping of society itself. Markets are reacting violently.",
+    "source": {
+      "vehicle": "Vox",
+      "author": "Jane Smith",
+      "date": "2026-06-14",
+      "logo": "assets/icon_newspaper.png"
+    },
+    "layout": "document_inspect",
+    "annotations": [
       {
-        "particles": {
-          "density": 45000,
-          "speed": 0.5,
-          "turbulence": 0.4,
-          "morph_strength": 1.0,
-          "target_icon": "test_assets/dollar.png"
-        }
+        "type": "highlight",
+        "text": "reshaping of society itself"
       }
     ]
   }

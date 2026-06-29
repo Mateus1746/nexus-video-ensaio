@@ -3,37 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign Ensay - Particle Morphing Engine (Cold War Style)</title>
+    <title>Sovereign Ensay - Three.js Documentary Engine</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Outfit:wght@300;400;700;900&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./index.css">
+
+    <!-- Three.js e GSAP locais -->
+    <script src="./three.min.js"></script>
+    <script src="./gsap.min.js"></script>
 </head>
 <body>
     <div id="wrapper">
-        <div class="split-pane left-pane">
-            <div class="archive-header">DECLASSIFIED DATA</div>
-            <div id="viewport-container">
-                <canvas id="video-canvas" width="1920" height="1080"></canvas>
-            </div>
-            <div class="archive-footer">ANALYSIS: OMEGA PROTOCOL</div>
-        </div>
-        <div class="split-pane right-pane">
-            <div class="typewriter-container">
-                <p>SUBJECT: GLOBAL ESCALATION</p>
-                <p>STATUS: ACTIVE</p>
-                <div class="timeline-chart">
-                    <div class="chart-bar" style="width: 40%;"></div>
-                    <div class="chart-bar" style="width: 70%;"></div>
-                    <div class="chart-bar" style="width: 90%;"></div>
+        <div id="viewport-container">
+            <!-- 3D Canvas -->
+            <canvas id="video-canvas" width="1920" height="1080"></canvas>
+
+            <!-- 2D Overlay para UI/HUD e Legendas -->
+            <div id="overlay-container">
+                <div class="archive-header">DECLASSIFIED DATA</div>
+                <div id="subtitle-container"></div>
+
+                <!-- Highlights overlay -->
+                <div id="annotations-layer"></div>
+
+                <div id="hud-telemetry">
+                    T+ <span id="hud-time">0.00s</span><br/>
+                    TRGT: <span id="hud-target">world.json</span>
                 </div>
-            </div>
-            <div id="hud-telemetry">
-                T+ <span id="hud-time">0.00s</span><br/>
-                TRGT: <span id="hud-target">world.json</span>
+
+                <!-- Overlay extra para grid CSS/VHS se necessário -->
+                <div class="scanlines"></div>
             </div>
         </div>
     </div>
     <script src="./app.js"></script>
 </body>
 </html>
+<!-- SVG Filter Definitions -->
+<svg style="display:none;">
+  <filter id="ink-bleed">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" />
+  </filter>
+</svg>

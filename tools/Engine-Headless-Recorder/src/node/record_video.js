@@ -246,24 +246,18 @@ async function recordCPU() {
     browser = await puppeteer.launch({
       headless: 'new',
       protocolTimeout: 0,
-      env: {
-        ...process.env,
-        __NV_PRIME_RENDER_OFFLOAD: '1',
-        __GLX_VENDOR_LIBRARY_NAME: 'nvidia'
-      },
       args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-web-security',
-        '--font-render-hinting=none',
-        '--ignore-gpu-blocklist',
-        '--disable-gpu-sandbox',
-        '--enable-gpu-rasterization',
-        '--enable-oop-rasterization',
-        '--use-gl=angle',
-        '--use-angle=gl'
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--use-gl=angle', // Force WebGL on headless
+          '--enable-webgl',
+          '--ignore-gpu-blocklist',
+          '--disable-dev-shm-usage',
       ],
+      env: {
+          ...process.env,
+          __NV_PRIME_RENDER_OFFLOAD: '1' // If nvidia is available
+      },
       defaultViewport: { width: VIEWPORT_W, height: VIEWPORT_H }
     });
 
@@ -342,28 +336,19 @@ async function record() {
     browser = await puppeteer.launch({
       headless: 'new',
       protocolTimeout: 0,
-      env: {
-        ...process.env,
-        __NV_PRIME_RENDER_OFFLOAD: '1',
-        __GLX_VENDOR_LIBRARY_NAME: 'nvidia'
-      },
       args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-web-security',
-        '--font-render-hinting=none',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--ignore-gpu-blocklist',
-        '--disable-gpu-sandbox',
-        '--enable-gpu-rasterization',
-        '--enable-oop-rasterization',
-        '--use-gl=angle',
-        '--use-angle=gl'
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--use-gl=angle', // Force WebGL on headless
+          '--enable-webgl',
+          '--ignore-gpu-blocklist',
+          '--disable-dev-shm-usage',
       ],
-      defaultViewport: { width: CAPTURE_WIDTH, height: CAPTURE_HEIGHT }
+      env: {
+          ...process.env,
+          __NV_PRIME_RENDER_OFFLOAD: '1' // If nvidia is available
+      },
+      defaultViewport: { width: VIEWPORT_W, height: VIEWPORT_H }
     });
 
     const page = await browser.newPage();

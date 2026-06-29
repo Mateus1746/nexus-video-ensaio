@@ -1,156 +1,166 @@
-:root {
-    --bg-color: #1a1a1a;
-    --border-color: rgba(255, 204, 0, 0.5);
-    --accent-color: #ffcc00;
-    --text-main: #d9d9d9;
-    --sepia-bg: #2d2a22;
-    --olive-bg: #2e3b32;
-}
-
-* {
-    box-sizing: border-box;
+/* Reset & Base */
+body, html {
     margin: 0;
     padding: 0;
-}
-
-body {
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    font-family: 'Courier Prime', monospace;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: 100%;
+    height: 100%;
+    background-color: #0D0D1A;
+    font-family: 'Space Grotesk', sans-serif;
     overflow: hidden;
+    color: #fff;
 }
 
 #wrapper {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    width: 100vw;
-    height: 100vh;
-    background: repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,0.1),
-      rgba(0,0,0,0.1) 1px,
-      transparent 1px,
-      transparent 2px
-    );
+    width: 1920px;
+    height: 1080px;
     position: relative;
-}
-
-/* Scanline Overlay for whole screen (CRT documentary look) */
-#wrapper::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(
-        to bottom,
-        rgba(18, 16, 16, 0) 50%,
-        rgba(0, 0, 0, 0.25) 50%
-    );
-    background-size: 100% 4px;
-    z-index: 9999;
-    pointer-events: none;
-}
-
-.split-pane {
+    transform-origin: top left;
     display: flex;
-    flex-direction: column;
-    padding: 2rem;
-}
-
-.left-pane {
-    background-color: var(--sepia-bg);
-    border-right: 2px dashed var(--border-color);
     justify-content: center;
     align-items: center;
-    position: relative;
-}
-
-.right-pane {
-    background-color: var(--olive-bg);
-    justify-content: space-between;
-}
-
-.archive-header, .archive-footer {
-    font-size: 1.5rem;
-    color: var(--accent-color);
-    text-shadow: 0 0 10px rgba(255, 204, 0, 1.0);
-    margin-bottom: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    filter: brightness(1.2);
-}
-
-.archive-footer {
-    margin-top: 1rem;
-    margin-bottom: 0;
 }
 
 #viewport-container {
+    width: 1920px;
+    height: 1080px;
     position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    border: 3px solid var(--border-color);
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 0, 0, 0.9);
-    background: #000;
 }
 
-canvas {
+/* 3D Canvas */
+#video-canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* 2D Overlay Container */
+#overlay-container {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    display: block;
-    filter: brightness(1.5) contrast(1.3);
+    z-index: 10;
+    pointer-events: none;
 }
 
-.typewriter-container {
-    font-size: 1.2rem;
-    color: #a3b899;
-    text-shadow: 0 0 8px rgba(163, 184, 153, 0.8);
-    filter: brightness(1.2);
-}
-
-.typewriter-container p {
-    margin-bottom: 1rem;
-    border-right: 2px solid #a3b899;
-    white-space: nowrap;
-    overflow: hidden;
-    animation: typing 4s steps(40, end), blink-caret .75s step-end infinite;
-}
-
-.timeline-chart {
-    margin-top: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.chart-bar {
-    height: 20px;
-    background-color: #a3b899;
-    border: 1px solid #1a1a1a;
+/* HUD & UI Elements */
+.archive-header {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 2px;
 }
 
 #hud-telemetry {
+    position: absolute;
+    bottom: 40px;
+    right: 40px;
     font-family: 'Courier Prime', monospace;
-    font-size: 1rem;
-    color: var(--accent-color);
+    font-size: 20px;
+    color: rgba(0, 242, 255, 0.8);
+    text-align: right;
+    line-height: 1.5;
+}
+
+/* Legendas */
+#subtitle-container {
+    position: absolute;
+    bottom: 100px;
+    width: 100%;
+    text-align: center;
+    font-family: 'Outfit', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    color: #FAF9F6;
     letter-spacing: 1px;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    text-shadow: 0 0 10px rgba(255, 204, 0, 1.0);
-    filter: brightness(1.2);
+    padding: 0 100px;
+    box-sizing: border-box;
 }
 
-@keyframes typing {
-  from { width: 0 }
-  to { width: 100% }
+/* Efeito Documentário (Scanlines / Vignette) */
+.scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+    background-size: 100% 4px;
+    z-index: 20;
+    pointer-events: none;
+    mix-blend-mode: overlay;
 }
 
-@keyframes blink-caret {
-  from, to { border-color: transparent }
-  50% { border-color: #a3b899; }
+/* Anotações HTML/SVG */
+#annotations-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    pointer-events: none;
+}
+
+/* SVG Filters para distorção da tinta (ink bleed) */
+svg {
+    position: absolute;
+}
+
+.annotation-highlight {
+    position: absolute;
+    mix-blend-mode: multiply;
+    font-size: 45px;
+    font-family: 'Courier Prime', monospace;
+    color: transparent; /* Texto invisível, só mostra o fundo amarelo */
+    background: transparent;
+}
+
+.annotation-highlight .highlight-inner {
+    position: relative;
+    display: inline-block;
+    color: #111; /* Cor do texto original caso queira sobrepor */
+}
+
+.annotation-highlight .highlight-inner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -10px; right: -10px; bottom: 0;
+    background: rgba(255, 255, 0, 0.75);
+    z-index: -1;
+    transform-origin: left center;
+    animation: drawHighlight 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    filter: url(#ink-bleed);
+    box-shadow: 2px 2px 8px rgba(255,255,0,0.4);
+    border-radius: 2px;
+}
+
+@keyframes drawHighlight {
+    0% { transform: scaleX(0); }
+    100% { transform: scaleX(1); }
+}
+
+.annotation-circle {
+    position: absolute;
+}
+
+.hand-drawn-path {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: drawCircle 1s ease-out forwards;
+}
+
+@keyframes drawCircle {
+    0% { stroke-dashoffset: 1000; }
+    100% { stroke-dashoffset: 0; }
 }
