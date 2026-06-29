@@ -318,6 +318,10 @@ async function record() {
     await page.evaluate(() => document.fonts.ready);
     console.log(`[RECORDER] Fontes carregadas.`);
 
+    console.log(`[RECORDER] Aguardando inicialização dos recursos da aplicação...`);
+    await page.waitForFunction(() => window.__appReady === true, { timeout: 30000 });
+    console.log(`[RECORDER] Aplicação pronta.`);
+
     // 1. Injetar o CoreRecorder dinamicamente na página
     console.log(`[RECORDER] Injetando gravador na página...`);
     await page.addScriptTag({ url: `http://127.0.0.1:${PORT}/Engine-Headless-Recorder/src/browser/recorder-core.js` });
