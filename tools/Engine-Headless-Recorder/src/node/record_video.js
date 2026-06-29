@@ -352,8 +352,10 @@ async function record() {
         }
         await window.recorder.recordFrame(canvas, timeMs);
 
-        // Yield via setTimeout(0) a cada frame para permitir que o codificador e o worker processem chunks sem travar/acumular fila
-        await new Promise(resolve => setTimeout(resolve, 0));
+        // Yield via setTimeout(0) a cada 10 frames para aliviar a thread principal e evitar suspensão de budget de CPU do Chrome
+        if (i % 10 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
 
         // Imprime o progresso no console do browser (capturado por page.on('console'))
         if ((i + 1) % fps === 0) {
